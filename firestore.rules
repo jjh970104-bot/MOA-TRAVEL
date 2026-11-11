@@ -35,6 +35,30 @@ service cloud.firestore {
       allow list, create, update, delete: if false;
     }
 
+    // Public read-only itinerary preview: high-entropy link only; NEVER full trips.
+    // Firestore client users may publish/revoke only their own restricted previews.
+    match /guestPreviews/{previewId} {
+      allow get: if true;
+      allow list: if false;
+      allow create: if moaVerified()
+        && request.resource.data.keys().hasOnly(['ownerUid','title','destination','start','end','stops','createdAt'])
+        && request.resource.data.ownerUid == request.auth.uid
+        && request.resource.data.title is string
+        && request.resource.data.destination is string
+        && request.resource.data.start is string
+        && request.resource.data.end is string
+        && request.resource.data.stops is list
+        && request.resource.data.stops.size() <= 150
+        && request.resource.size() < 150000;
+      allow update: if moaVerified()
+        && resource.data.ownerUid == request.auth.uid
+        && request.resource.data.ownerUid == request.auth.uid
+        && request.resource.data.keys().hasOnly(['ownerUid','title','destination','start','end','stops','createdAt'])
+        && request.resource.data.stops is list
+        && request.resource.data.stops.size() <= 150
+        && request.resource.size() < 150000;
+      allow delete: if moaVerified() && resource.data.ownerUid == request.auth.uid;
+    }
     // Unlisted invitation snapshots: anyone with a high-entropy link ID
     // still needs an authenticated and email-verified MOA account to view.
     // The owner alone can publish, refresh or revoke a share.
