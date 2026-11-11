@@ -14,6 +14,28 @@ service cloud.firestore {
         && request.resource.data.trips is list
         && request.resource.data.updatedBy == request.auth.uid;
     }
+    // Unlisted invitation snapshots: anyone with a high-entropy link ID
+    // still needs an authenticated and email-verified MOA account to view.
+    // The owner alone can publish, refresh or revoke a share.
+    match /tripShares/{shareId} {
+      allow get: if request.auth != null
+        && request.auth.token.email_verified == true;
+      allow list: if false;
+      allow create: if request.auth != null
+        && request.auth.token.email_verified == true
+        && request.resource.data.keys().hasOnly(['ownerUid', 'trip', 'createdAt'])
+        && request.resource.data.ownerUid == request.auth.uid
+        && request.resource.data.trip is map
+        && request.resource.data.trip.title is string;
+      allow update: if request.auth != null
+        && request.auth.token.email_verified == true
+        && resource.data.ownerUid == request.auth.uid
+        && request.resource.data.ownerUid == request.auth.uid
+        && request.resource.data.keys().hasOnly(['ownerUid', 'trip', 'createdAt'])
+        && request.resource.data.trip is map;
+      allow delete: if request.auth != null
+        && resource.data.ownerUid == request.auth.uid;
+    }
     match /{document=**} { allow read, write: if false; }
   }
 }
