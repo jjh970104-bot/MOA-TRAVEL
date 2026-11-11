@@ -320,7 +320,7 @@ async function cloudLogout(){
     leaveCollab();if(collabListUnsub){collabListUnsub();collabListUnsub=null}collabList=[];
     disconnectCloud();
     await setupCloud().auth.signOut();
-    cloudUser=null;accountModal();toast('로그아웃했어요. 브라우저 데이터는 유지돼요.');
+    cloudUser=null;detailId=null;page='dashboard';render();accountModal();toast('로그아웃했어요. 브라우저에 저장된 개인 데이터는 유지돼요.');
   }catch(e){toast(authError(e))}
 }
 function disconnectCloud(){cloudActive=false;cloudPending=false;clearTimeout(cloudTimer);if(cloudListener){cloudListener();cloudListener=null}cloudRef=null}
