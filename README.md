@@ -1,3 +1,13 @@
+## V1.7 — Trip invitation links (2026-11-11)
+
+A logged-in, email-verified member who has enabled cloud saving can open a trip and use **여행 공유**. This publishes an unlisted snapshot in `tripShares/{randomFirestoreID}`, copies a deep-link of the form `/#share=TOKEN` under MOA's existing GitHub Pages path, and lets a signed-in verified recipient **copy** the shared trip into their own local trip list. The owner can refresh a snapshot or revoke its link. Copied trips have new trip IDs and do not share their original edit state.
+
+**Important: Publish updated `firestore.rules` in the Firebase console manually** to enable the new collection. GitHub deployment does not deploy Firestore security rules.
+
+**Privacy limitations:** The snapshot includes the **entire trip object** (including expense, notes, booking data); anybody with the link *and a verified MOA account* can read it. There is no single-invitee restriction, recipient approval list, access notification, automatic expiration, or live collaboration. Links may be forwarded. Revocation prevents new reads but cannot retract already copied data. Do not share trips containing private booking numbers or other sensitive data. Prefer testing with dummy trips.
+
+**Known prototype limitations:** Shared snapshot content is not automatically refreshed after source edits; the owner must click to refresh. Saved browser data is not automatically isolated by signed-in account, and multi-device edits could conflict. A dedicated owner/member role and separate collaborative trip record are needed before enabling live co-editing.
+
 ## V1.6 — Firebase Auth wired (2026-11-11)
 
 MOA's GitHub Pages client has been configured for the **new independent Firebase project** `moa-travel-1b87d` (not Shanghai V14). Public Firebase web app configuration is in `firebase-config.js`, without any private service-account key.
