@@ -351,7 +351,7 @@ function currencyTotals(arr,currency){
   return {sum,paid,pending:sum-paid};
 }
 function expenseAmountValid(amount,currency){
-  return Number.isFinite(amount)&&amount>=0&&amount<=1e10&&(['KRW','JPY','VND'].includes(currency)?Number.isSafeInteger(amount):Math.round(amount*100)===amount*100);
+  return Number.isFinite(amount)&&amount>=0&&amount<=1e10&&(['KRW','JPY','VND'].includes(currency)?Number.isSafeInteger(amount):Math.abs(Math.round(amount*100)-amount*100)<1e-6);
 }
 
 function expenseView(t){
