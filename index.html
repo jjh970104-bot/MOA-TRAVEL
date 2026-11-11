@@ -292,7 +292,7 @@
 <body>
 <header class="topbar"><div class="shell toprow"><button class="brand" data-nav="home"><span class="brandmark">✿</span><span class="brandtext">moa<span style="color:#8cb397">.</span></span></button><nav class="topnav"><button class="navlink active" data-nav="home">홈</button><button class="navlink" data-nav="dashboard">내 여행</button><button class="navlink" data-nav="explore">여행 탐색</button><button class="navlink" data-nav="community">커뮤니티</button></nav><div class="topactions"><button class="secondary" id="accountButton" data-account>로그인 / 회원가입</button><button class="primary" id="topCreate">＋ 여행 만들기</button></div></div></header>
 <main id="app" class="shell"></main>
-<footer class="footer"><div class="shell">© 2026 moa. · 여행의 순간을 모으다 <span style="float:right">V2.6 · 회원 전용 여행 · 게스트 보기</span></div></footer>
+<footer class="footer"><div class="shell">© 2026 moa. · 여행의 순간을 모으다 <span style="float:right">V2.7 · 상하이 여행 가져오기 · 현지어</span></div></footer>
 <nav class="mobilebar"><button data-nav="home"><span>⌂</span>홈</button><button data-nav="dashboard"><span>▦</span>내 여행</button><button data-nav="explore"><span>⌕</span>탐색</button><button data-nav="community"><span>♡</span>커뮤니티</button></nav>
 <div id="modalRoot"></div><div id="toastRoot"></div>
 <script>
@@ -339,7 +339,7 @@ function dashboard(){
   const shownInvited=filter==='all'?invited:filter==='done'?invitedDone:invitedPlanning;
   app.innerHTML='<div class="pagehead"><div><span class="eyebrow">My travel collection</span><h1>내 여행 모아보기 🌿</h1><p>내가 만든 여행과 초대받은 공동 여행을 한곳에서 관리해요.</p></div><button class="primary" data-create>＋ 새 여행</button></div>'+
   '<div class="stats"><div class="stat"><span class="sub">전체 여행</span><div class="num">'+all+'</div></div><div class="stat"><span class="sub">계획 중</span><div class="num">'+planned+'</div></div><div class="stat"><span class="sub">다녀온 여행</span><div class="num">'+done+'</div></div></div>'+
-  '<div class="secthead"><div><h2>나의 여행</h2></div><div class="actionrow"><button class="secondary" data-import style="font-size:12px;padding:10px">↑ 백업 불러오기</button><button class="secondary" data-export style="font-size:12px;padding:10px">↓ 백업 내보내기</button></div></div>'+
+  '<div class="secthead"><div><h2>나의 여행</h2></div><div class="actionrow"><button class="secondary" data-import style="font-size:12px;padding:10px">＋ 여행 파일 가져오기</button><button class="secondary" data-export style="font-size:12px;padding:10px">↓ 백업 내보내기</button></div></div>'+
   '<div class="filters"><button class="filter '+(filter==='all'?'active':'')+'" data-filter="all">전체 '+all+'</button><button class="filter '+(filter==='planning'?'active':'')+'" data-filter="planning">계획 중 '+planned+'</button><button class="filter '+(filter==='done'?'active':'')+'" data-filter="done">다녀온 여행 '+done+'</button></div>'+
   '<div class="tripgrid">'+((shown.length||shownInvited.length)?shown.map(card).join('')+
    shownInvited.map(c=>'<article class="trip v23-invited"><div class="tripbody"><span class="badge">👥 함께하는 여행</span><h3>'+esc(c.title||'여행')+'</h3><p>📍 '+esc(c.destination||'')+'</p><div class="tripfoot"><span class="tiny muted">초대받은 여행</span><button class="textbtn" data-open-collab="'+esc(c.id)+'">여행 열기 ↗</button></div><div class="v23-invited-actions"><button type="button" class="secondary mini" data-hide-collab="'+esc(c.id)+'" aria-label="'+esc(c.title||'여행')+' 목록에서 제거">목록에서 제거</button></div></div></article>').join('') :
@@ -1261,7 +1261,31 @@ function checkShareHash(){
   const match=/^#share=([A-Za-z0-9_-]{8,128})$/.exec(location.hash);
   if(match){pendingShareId=match[1];if(cloudUser&&userVerified())openSharedTrip(pendingShareId);else if(cloudAuthReady)openSharedTrip(pendingShareId)}
 }
-function importData(){const picker=document.createElement('input');picker.type='file';picker.accept='.json,application/json';picker.addEventListener('change',async()=>{const file=picker.files?.[0];if(!file)return;try{const raw=JSON.parse(await file.text()),imported=Array.isArray(raw)?raw:raw.trips;if(!Array.isArray(imported)||!imported.every(t=>t&&typeof t.id==='string'&&typeof t.title==='string'&&typeof t.start==='string'&&typeof t.end==='string'))throw Error('형식 오류');if(!confirm('현재 모아 여행 목록을 백업 파일로 교체할까요? 기존 여행이 있다면 먼저 백업을 다운로드해 주세요.'))return;const previous=trips;trips=imported.map(t=>({...t}));if(!save()){trips=previous;return}detailId=null;page='dashboard';render();toast(imported.length+'개 여행을 불러왔어요! 🌷')}catch(e){toast('올바른 모아 JSON 백업 파일이 아니에요.')}});picker.click()}
+
+function importData(){
+ if(!cloudUser||!userVerified()){accountModal();return}
+ const picker=document.createElement('input');picker.type='file';picker.accept='.json,application/json';
+ picker.addEventListener('change',async()=>{
+  const file=picker.files?.[0];if(!file)return;
+  try{
+   const raw=JSON.parse(await file.text()),imported=Array.isArray(raw)?raw:raw.trips;
+   if(!Array.isArray(imported)||!imported.length||!imported.every(t=>t&&typeof t.id==='string'&&typeof t.title==='string'&&typeof t.start==='string'&&typeof t.end==='string'&&Array.isArray(t.stops)))throw Error('올바른 모아 여행 파일이 아니에요.');
+   if(imported.length>30)throw Error('한 번에 최대 30개 여행까지 가져올 수 있어요.');
+   const isAppend=raw?.importMode==='append';
+   const msg=isAppend?'여행 '+imported.length+'개를 기존 내 여행에 새로 추가할까요? 기존 여행은 유지돼요.':'여행 '+imported.length+'개를 가져올까요? [확인]은 기존 여행에 추가하고, [취소]는 가져오기를 중단해요.';
+   if(!confirm(msg))return;
+   const previous=trips;
+   // Always append, even for older backups, to avoid unintended destructive replacement.
+   const added=imported.map(t=>{const copy=JSON.parse(JSON.stringify(t));copy.id=uuid();delete copy.shareId;delete copy.guestPreviewId;delete copy.collabId;ensureTrip(copy);return copy});
+   trips=[...added,...trips];
+   if(!save()){trips=previous;return}
+   detailId=null;page='dashboard';render();
+   toast(added.length+'개 여행을 새로 추가했어요! 🌷');
+   if(!cloudActive)toast('새 여행이 이 브라우저에 추가됐어요. 다른 기기와 동기화하려면 데이터 관리에서 클라우드 업로드가 필요해요.');
+  }catch(err){toast('가져오기 실패: '+(err.message||'올바른 JSON 파일이 아니에요.'))}
+ });
+ picker.click();
+}
 function exportSharedData(){
   if(!sharedTrip)return;
   const copy=sharedClone(sharedTrip);delete copy.collabId;delete copy.shareId;
