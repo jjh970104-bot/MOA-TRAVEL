@@ -2,9 +2,17 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     match /users/{userId}/data/{docId} {
-      allow read, write: if request.auth != null
+      allow read: if request.auth != null
         && request.auth.uid == userId
+        && request.auth.token.email_verified == true
         && docId == 'travel';
+      allow write: if request.auth != null
+        && request.auth.uid == userId
+        && request.auth.token.email_verified == true
+        && docId == 'travel'
+        && request.resource.data.keys().hasOnly(['trips', 'updatedAt', 'updatedBy'])
+        && request.resource.data.trips is list
+        && request.resource.data.updatedBy == request.auth.uid;
     }
     match /{document=**} { allow read, write: if false; }
   }
