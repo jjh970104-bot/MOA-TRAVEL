@@ -1,3 +1,23 @@
+## V1.9 — Unified multi-user editing in the existing planner (2026-11-11)
+
+**IMPORTANT: Update Firebase Console → Firestore Database → Rules using the latest `firestore.rules` file and click Publish. The GitHub code deploy does NOT deploy Firestore rules.** New permission for `collabTrips/{tripId}/state/current` is necessary for the shared planner.
+
+UX:
+1. Open a personal trip and choose **👥 여행자 추가**. On first use, the app creates a **shared Firebase state** from the existing private trip and an invitation link. Existing private trip data is kept as an untouched fallback/backup. The **same trip card** in the trip list now opens the unified shared planner; no separate collaboration screen is required.
+2. Invitee signs into a separate, verified MOA account and follows the link. They now open the **same full trip planner**, including schedule, stay/transport, expenses, shopping and checklist, and can edit if authorized.
+3. Both parties get Firestore real-time snapshots on **`collabTrips/{tripId}/state/current`**. Local changes are debounced and merged with the latest server document using Firestore transactions. Individual array items (identified by their `id`) and different object fields are patched rather than overwriting a whole array, so independent edits to different items/fields generally merge without loss. A same-field simultaneous edit is still last-write-wins. Delete-vs-edit on the same item can conflict. No operational-transform/CRDT guarantees.
+4. Owner controls collaborator roles via **👥 참여자 관리**, and can create additional invites using **👥 여행자 추가**.
+5. Shared planner offers save status, retry after failed saves, discard unsaved changes, and a JSON backup of the currently opened shared trip. It blocks navigation while shared edits remain unsaved.
+
+Technical limitations:
+- A *new* shared state is initialized once from the owner's existing trip. The original private copy remains as a backup and is no longer the canonical data after sharing. To edit the authoritative copy, open the linked trip card (it navigates to the shared planner).
+- All shared travel info is currently in one Firestore document, subject to Firestore's document size limit (1 MiB). A larger multi-document redesign is needed for sizable production trips.
+- Invitation links can be forwarded; memberships have no time-based expiration. No audit history or conflict-free simultaneous same-field editing. Do not share sensitive booking reference numbers or personal details during prototype testing.
+- Existing pre-V1.9 collaborative workspaces with no state/current may be migrated by their owner using the associated private trip, but historic edits made *only* in the legacy separate schedule may not be migrated automatically. Back up before testing migration.
+- User-specific private localStorage remains separate from Firebase and isn't yet wiped on logout on shared browsers.
+
+Validation: JavaScript parses successfully; the item/field merge helper passed isolated tests for edits to separate fields and collections. **The new Firestore security rules and end-to-end 2-account editing still require live testing in the user's Firebase project.**
+
 ## V1.8 UX simplification — Add traveler (2026-11-11)
 
 The separate **공동 여행** section has been removed from the dashboard. Open a personal trip and select **👥 여행자 추가**. On first use, this provisions a separate collaborative schedule backing store and opens an invitation prompt; on later use, it opens the associated collaborative schedule and produces an invitation link. Existing private trip details (stays, expenses, shopping, transport, etc.) remain available through the **original travel card and detail view**, and a **🤝 공동 일정 열기** button provides access to the separately synced schedule. A recipient's shared schedule appears as a single travel card under **내 여행**, not as a second section.
