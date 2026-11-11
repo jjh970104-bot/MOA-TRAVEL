@@ -351,11 +351,16 @@ async function startCollab(){
     batch.set(ref,{ownerUid:uid,title:original.title,destination:original.destination,start:original.start,end:original.end,createdAt:firebase.firestore.FieldValue.serverTimestamp()});
     batch.set(ref.collection('members').doc(uid),{uid,role:'owner',name:cloudUser.displayName||cloudUser.email||'여행장',joinedAt:firebase.firestore.FieldValue.serverTimestamp()});
     batch.set(db.collection('users').doc(uid).collection('collaborations').doc(ref.id),{title:original.title,destination:original.destination,role:'owner'});
-    for(const stop of (original.stops||[]).slice(0,200)){
-      const doc=ref.collection('stops').doc();
-      batch.set(doc,{name:String(stop.name||'장소'),day:Number(stop.day)||0,time:stop.time||'',address:stop.address||'',note:stop.note||'',order:Number(stop.order)||0,updatedBy:uid});
-    }
     await batch.commit();
+    const stops=(original.stops||[]).slice(0,200);
+    if(stops.length){
+      const stopBatch=db.batch();
+      for(const stop of stops){
+        const doc=ref.collection('stops').doc();
+        stopBatch.set(doc,{name:String(stop.name||'장소').slice(0,90),day:Math.max(0,Math.min(119,Number(stop.day)||0)),time:String(stop.time||''),address:String(stop.address||'').slice(0,200),note:String(stop.note||'').slice(0,500),order:Number(stop.order)||0,updatedBy:uid});
+      }
+      try{await stopBatch.commit()}catch(e){toast('공동 여행은 만들었지만 일부 일정 복사에 실패했어요: '+(e.code||e.message))}
+    }
     await openCollab(ref.id);
     toast('공동 여행을 만들었어요! 🌷');
   }catch(e){toast('공동 여행 생성 실패: '+(e.code||e.message))}
