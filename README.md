@@ -1,3 +1,23 @@
+## MOA V2.2 — Site administrator center (2026-11-11)
+
+Admin foundation has been committed to `index.html` and `firestore.rules`. **Not yet activated for any user** until the actual owner's UID is provisioned using Firebase Console and the updated rules are published. Do not infer the owner's UID from their email, nickname, GitHub account or this README.
+
+### One-time owner activation (manual Firebase Console action)
+1. In the MOA website, sign in to the **existing owner account** (not the test account) and open **계정/저장**. Copy the displayed **내 Firebase UID**. Firebase Auth UID is a user identifier, not a password; use only the owner account's UID.
+2. Open [MOA Firestore Rules](https://console.firebase.google.com/project/moa-travel-1b87d/firestore/rules), replace the complete rules contents with the current repo `firestore.rules`, and click **Publish**. Preserve all existing travel/share/collaboration rule sections.
+3. Open [MOA Firestore Data](https://console.firebase.google.com/project/moa-travel-1b87d/firestore/data) and create a **root collection** `admins`. Add a document whose **document ID equals the owner's exact Firebase UID**. Add these exact fields: `role` (string) = `superadmin`; `enabled` (boolean) = `true`. Do not create a document for the test account. Firestore Console administrative writes bypass normal client security rules.
+4. Sign out/in or reload the MOA site. Open **계정/저장** again and click **🛡️ 관리자 센터 열기**. If the menu doesn't appear, verify the UID, boolean type, and Rules publication.
+5. Verify in a second browser signed into the **test account** that it cannot read the owner-admin document, create an admin document, or access the dashboard. The UI button should not appear for that account.
+
+### Security and scope
+- All admin privileges derive from Firestore `admins/{uid}` with exact fields `role='superadmin'` and `enabled=true`. A client can `get` only its own admin-role document; browser writes and collection listing are denied.
+- The administrator dashboard is available only after authentication and a Firestore role read and currently shows own-account diagnostics plus **correctly labeled** placeholders for site-wide member/trip/collaboration counts. It does **not** browse or expose users' private itinerary/expense documents.
+- `adminMetrics/overview` can be read by verified, authorized administrators, but only backend / Firebase Console can write it. No backend aggregate generator has been deployed, so overall counts are **집계 전** until explicitly provisioned. Do not interpret local personal trip counts as global data.
+- An administrator is not automatically granted Firebase Authentication account listing, user removal, or private trip access. Those require audited backend actions and deliberate permissions. No such controls are implemented yet.
+- The previous V2.1 expense and collaboration schemas remain unchanged.
+
+Validation performed: JavaScript syntax parsed for all inline scripts; admin role predicate passed isolated true/false tests. Actual Firebase role, rule deployment and browser access control must still be tested with owner and test accounts.
+
 ## V2.1 collaboration sync patch (2026-11-11)
 
 A user reported that an expense entered in one browser did not appear in the other account. This is not yet independently reproduced. The realtime shared state listener previously dropped snapshots received while a local write was busy/dirty without scheduling reconciliation. The new `sharedRefreshNeeded` flag and `refreshSharedFromServer` read reconcile the canonical Firebase state after a successful local save. The trip header now explicitly distinguishes `개인 여행` and `공동 여행`; the shared-trip action menu offers a manual server refresh to aid diagnosing stale screens. Member list refresh no longer re-renders while typing in the quick expense form. Firebase rules are unchanged.
