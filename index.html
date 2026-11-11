@@ -176,7 +176,7 @@
 <div id="modalRoot"></div><div id="toastRoot"></div>
 <script>
 (function(){'use strict';
-const STORAGE_KEY='moa-v1-trips-independent-2026';const app=document.getElementById('app');const modalRoot=document.getElementById('modalRoot');let page='home',filter='all',detailId=null,detailDay=0,plannerTab='schedule',plannerMode='plan';let trips=[];let pendingShareId=null,pendingCollabToken=null,collabId=null,collabMeta=null,collabStops=[],collabStopUnsub=null,collabMetaUnsub=null,collabMemberUnsub=null,collabRole=null,collabList=[],collabListUnsub=null,sharedTrip=null,sharedBase=null,sharedStateUnsub=null,sharedDirty=false,sharedBusy=false,sharedTimer=null,sharedEditVersion=0,sharedStateRef=null,sharedSaveFailed=false,sharedDeferredRemote=null,expenseMembers=[],expenseMembersUnsub=null;let routeMap=null,placeSearchTimer=null,placeSearchResults=[],placeSelected=null,cloudUser=null,cloudActive=false,cloudListener=null,cloudRef=null,cloudTimer=null,cloudPending=false,cloudBusy=false,cloudApplying=false,cloudAuthReady=false;const MAP_KEY='moa-geoapify-api-key-v1';
+const STORAGE_KEY='moa-v1-trips-independent-2026';const app=document.getElementById('app');const modalRoot=document.getElementById('modalRoot');let page='home',filter='all',detailId=null,detailDay=0,plannerTab='schedule',plannerMode='plan';let trips=[];let pendingShareId=null,pendingCollabToken=null,collabId=null,collabMeta=null,collabStops=[],collabStopUnsub=null,collabMetaUnsub=null,collabMemberUnsub=null,collabRole=null,collabList=[],collabListUnsub=null,sharedTrip=null,sharedBase=null,sharedStateUnsub=null,sharedDirty=false,sharedBusy=false,sharedTimer=null,sharedEditVersion=0,sharedStateRef=null,sharedSaveFailed=false,sharedDeferredRemote=null,sharedRefreshNeeded=false,expenseMembers=[],expenseMembersUnsub=null;let routeMap=null,placeSearchTimer=null,placeSearchResults=[],placeSelected=null,cloudUser=null,cloudActive=false,cloudListener=null,cloudRef=null,cloudTimer=null,cloudPending=false,cloudBusy=false,cloudApplying=false,cloudAuthReady=false;const MAP_KEY='moa-geoapify-api-key-v1';
 try{const saved=JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]');trips=Array.isArray(saved)?saved.filter(t=>t&&typeof t.id==='string'):[]}catch(e){console.warn('저장된 데이터 읽기 실패',e);}
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function save(){
@@ -381,7 +381,7 @@ if(plannerTab==='schedule')main=`<div class="secthead"><h2>${plannerMode==='plan
 if(plannerTab==='stays')main=staysView(t);if(plannerTab==='transport')main=transportView(t);if(plannerTab==='expense')main=expenseView(t);if(plannerTab==='shopping')main=shoppingView(t);if(plannerTab==='checklist')main=checklistView(t);
 const completed=t.stops.filter(x=>x.done).length;
 app.innerHTML=`<section class="v2-detail">
-  <div class="v2-topline"><button class="back" data-nav="dashboard">← 내 여행</button><span class="v2-sync" role="status">${collabId?(sharedSaveFailed?'⚠️ 저장 오류':sharedDirty||sharedBusy?'☁️ 저장 중':'☁️ 함께 편집 중'):(cloudActive?'☁️ 자동 저장':'🌱 브라우저 저장')}</span></div>
+  <div class="v2-topline"><button class="back" data-nav="dashboard">← 내 여행</button><span class="v2-sync" role="status">${collabId?(sharedSaveFailed?'⚠️ 공동 저장 오류':sharedDirty||sharedBusy?'☁️ 공동 저장 중':'☁️ 공동 여행 · 동기화 중'):(cloudActive?'🌱 개인 여행 · 클라우드':'🌱 개인 여행 · 브라우저 저장')}</span></div>
   <header class="v2-hero"><div class="v2-hero-info"><span class="eyebrow">${collabId?'🤝 함께하는 여행':'✿ 나의 여행'} · ${esc(t.destination)}</span><h1>${esc(t.title)}</h1><p>📅 ${duration(t)} · 👥 ${Number(t.people)||1}명</p></div><span class="v2-symbol" aria-hidden="true">${theme(t)[2]}</span></header>
   <div class="v2-summarybar"><div class="v2-summarycounts"><span>📍 일정 <b>${t.stops.length}</b></span><span>✓ 방문 <b>${completed}</b></span><span>✅ 준비물 <b>${t.checklist.filter(x=>x.done).length}/${t.checklist.length}</b></span></div>
     <div class="v2-quickactions"><button class="secondary mini v2-invite" data-add-traveler>👥 여행자 추가</button><details class="v2-manage"><summary>⋯ 관리</summary><div class="v2-manage-list">
@@ -542,7 +542,7 @@ function leaveCollab(){
   if(collabStopUnsub){collabStopUnsub();collabStopUnsub=null}
   if(collabMetaUnsub){collabMetaUnsub();collabMetaUnsub=null}
   if(sharedStateUnsub){sharedStateUnsub();sharedStateUnsub=null}
-  clearTimeout(sharedTimer);sharedTimer=null;sharedStateRef=null;sharedTrip=null;sharedBase=null;sharedDirty=false;sharedBusy=false;sharedSaveFailed=false;sharedDeferredRemote=null;
+  clearTimeout(sharedTimer);sharedTimer=null;sharedStateRef=null;sharedTrip=null;sharedBase=null;sharedDirty=false;sharedBusy=false;sharedSaveFailed=false;sharedDeferredRemote=null;sharedRefreshNeeded=false;
   if(collabMemberUnsub){collabMemberUnsub();collabMemberUnsub=null}
   if(expenseMembersUnsub){expenseMembersUnsub();expenseMembersUnsub=null}
   expenseMembers=[];
@@ -665,7 +665,20 @@ async function flushSharedSave(){
     else sharedDirty=true;
     toast('☁️ 함께하는 여행 저장 완료');
   }catch(e){if(collabId===id){sharedDirty=true;sharedSaveFailed=true;toast('⚠️ 공동 여행 저장 실패: '+(e.code||e.message)+' · 다시 저장을 눌러줘.')}}
-  finally{sharedBusy=false;if(collabId===id&&sharedDirty&&!sharedSaveFailed)scheduleSharedSave()}
+  finally{sharedBusy=false;if(collabId===id){if(sharedDirty&&!sharedSaveFailed)scheduleSharedSave();else if(sharedRefreshNeeded&&!sharedDirty){sharedRefreshNeeded=false;refreshSharedFromServer(id)}}}
+}
+
+async function refreshSharedFromServer(id){
+  if(collabId!==id||sharedDirty||sharedBusy||!sharedStateRef)return;
+  try{
+    const snap=await sharedStateRef.get({source:'server'});
+    if(collabId!==id||sharedDirty||sharedBusy||!snap.exists||!snap.data()?.trip)return;
+    const incoming=snap.data().trip;
+    if(!sharedEqual(sharedBase,incoming)){
+      if(modalRoot.querySelector('#overlay')){sharedDeferredRemote=sharedClone(incoming);return}
+      sharedBase=sharedClone(incoming);sharedTrip=sharedClone(incoming);render();
+    }
+  }catch(e){if(collabId===id)toast('공동 여행 최신 정보 확인 실패: '+(e.code||e.message))}
 }
 async function openCollab(id){
   try{
@@ -696,7 +709,7 @@ async function openCollab(id){
     expenseMembersUnsub=ref.collection('members').onSnapshot(snap=>{
       if(collabId!==id)return;
       expenseMembers=snap.docs.map(doc=>({uid:doc.id,...doc.data()}));
-      if(plannerTab==='expense'&&!modalRoot.querySelector('#overlay'))render();
+      if(plannerTab==='expense'&&!modalRoot.querySelector('#overlay')&&!document.activeElement?.closest('#quickExpenseForm'))render();
     },err=>{if(collabId===id)toast('결제자 목록 불러오기 실패: '+(err.code||err.message))});
     collabMetaUnsub=ref.onSnapshot(doc=>{
       if(collabId!==id)return;
@@ -705,7 +718,7 @@ async function openCollab(id){
     },e=>{toast('공동 여행 연결 오류: '+(e.code||e.message));leaveCollab();nav('dashboard')});
     sharedStateUnsub=stateRef.onSnapshot(snap=>{
       if(collabId!==id||!snap.exists||!snap.data()?.trip||snap.metadata.hasPendingWrites)return;
-      if(sharedDirty||sharedBusy)return;
+      if(sharedDirty||sharedBusy){sharedRefreshNeeded=true;return}
       const incoming=snap.data().trip;
       if(!sharedEqual(sharedBase,incoming)){
         if(modalRoot.querySelector('#overlay')){sharedDeferredRemote=sharedClone(incoming);return}
