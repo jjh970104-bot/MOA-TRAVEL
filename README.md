@@ -1,3 +1,16 @@
+## V2.1 (stage 1) — Expense currency + invited-member payer choice
+
+Updated the existing expenses tab and detailed expense entry in `index.html`:
+- The trip's default local currency can be chosen from KRW/CNY/JPY/USD/EUR/TWD/THB/VND/HKD/SGD/GBP/AUD/CAD, initially suggested from destination. Changing it changes only future input defaults, not existing expense currencies or amounts.
+- Every expense now records `currency`, `amount` (in that currency), and optional `payerUid` in addition to the backward-compatible `payer` display label and existing `paid` status.
+- Older expense records without `currency` remain KRW. Totals are **grouped by currency**, never summed across currencies.
+- In a collaborative trip, payer is selected from the actual Firebase `collabTrips/{tripId}/members` subscription; names update when members change. In a private trip, the former free-text payer input remains.
+- Quick-add and detailed edit support the same choices, including foreign currencies with up to two fractional places. The existing shared-trip Firebase state saves the new fields using the V1.9 transaction merge; Firestore rules need no change.
+
+**Not implemented intentionally:** FX rates, KRW conversion, equal split, debt calculations, settlements. Site-wide administrator authorization and management panel are not activated as part of this expense-only release.
+
+Checks run: embedded JavaScript syntax valid; isolated tests passed for KRW legacy compatibility, inferred CNY/JPY, decimal validation, per-currency totals, currency dropdown options. Real two-account payer selection and mobile layout still require user test.
+
 ## V2.0 — Compact responsive trip-detail layout (2026-11-11)
 
 **UI-only release: no Firebase schema or Firestore-rule changes.** Existing V1.9 collaboration, trip creation/editing, itinerary mapping and ordering, stay/transport, expenses, shopping, checklist, JSON backup and share links are preserved.
