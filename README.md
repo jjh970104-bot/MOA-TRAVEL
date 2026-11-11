@@ -1,3 +1,20 @@
+## V2.8 — Destination, dates, itinerary cards and transfer legs (2026-11-11)
+
+Revises the MOA interface inspired by the user's *separate, unchanged* Shanghai V14 planner:
+
+- Removed the redundant "로그인 후 클라우드에 여행 저장" explanation on the homepage. Account data-management functions remain collapsed and functional. Normal private trip detail no longer shows technical cloud/local-storage status; shared trip shows a simple editor/save status.
+- New/edit trip destination uses a **canonical regional selector** with country optgroups (e.g. "상해", "상하이" -> "중국 상하이"); "다른 여행지 직접 입력" remains available. Existing destinations are not silently rewritten until explicitly edited.
+- Trip creation dates accept typed eight digits `YYYYMMDD`, automatically formatting into `YYYY-MM-DD`. A native date-picker control is also available; both real calendar validity and 120-day trip constraints are checked.
+- Day tabs show **month/day + weekday** and an optional 1-line **date-specific theme**, without stop counts. A per-day edit button persists `dayThemes[YYYY-MM-DD]`. Older trips without theme display "DAY N"; previously imported Shanghai V14 trips get an **inferred display-only theme** from their known itinerary dates until edited. The enhanced Shanghai JSON import includes explicit saved themes.
+- Replaced schedule entry list with **compact itinerary cards**: confirmed stops use ordered number badges; alternative stops use a **후보** badge and a distinct indented card, never counted. Planning mode supports reordering, editing, detail disclosure; travel mode hides all candidates and emphasizes completed check/address.
+- Added **travel legs between confirmed entries**, with editable mode, duration in minutes, optional local-currency cost and note; travel information is stored per destination stop as `leg` so old unannotated entries remain valid and can be edited without migration. The standalone Shanghai source had one planned Shincheonji taxi/Didi 20-minute transfer; the refreshed download contains it.
+- Existing drag-and-drop event selectors were updated to recognize new card classes. Shared transactions still persist fields in stop records and top-level day themes without Firestore rules/schema changes.
+- Removed outdated "next version" / "demo" wording from public-facing copy.
+
+Tests conducted: JS syntax parse, normalized destination alias ("상해" -> "중국 상하이"), typed date formatting and leap-date validation, source Shanghai day-theme fallback, planned candidate vs travel-mode filtering, inter-stop mobility display/edit actions. Full real-device test (iPhone Safari and live two-account collaboration) remains outstanding.
+
+**Important:** The refreshed JSON is intended for **first import only**. Importing it a second time will create a duplicate trip because MOA import is append-only; existing users should use V2.8's new editing controls rather than re-importing.
+
 ## V2.7 — Shanghai data migration and destination language cheat sheets (2026-11-11)
 
 - Added a seventh planner tab **🗣️ 현지어** with destination-based guide switching for Chinese, Japanese, Thai, Vietnamese, French and English. Chinese expressions are drawn from the user's earlier independent Shanghai V14 planner (basic, dining, transport, shopping and sightseeing); each guide offers category filters, clipboard copy, and native device TTS when available. Unsupported destinations fall back to English. Pronunciation is approximate and device voice support varies.
