@@ -71,7 +71,7 @@
 <div id="modalRoot"></div><div id="toastRoot"></div>
 <script>
 (function(){'use strict';
-const STORAGE_KEY='moa-v1-trips-independent-2026';const app=document.getElementById('app');const modalRoot=document.getElementById('modalRoot');let page='home',filter='all',detailId=null,detailDay=0,plannerTab='schedule',plannerMode='plan';let trips=[];let pendingShareId=null,pendingCollabToken=null,collabId=null,collabMeta=null,collabStops=[],collabStopUnsub=null,collabMetaUnsub=null,collabRole=null,collabList=[],collabListUnsub=null;let routeMap=null,placeSearchTimer=null,placeSearchResults=[],placeSelected=null,cloudUser=null,cloudActive=false,cloudListener=null,cloudRef=null,cloudTimer=null,cloudPending=false,cloudBusy=false,cloudApplying=false,cloudAuthReady=false;const MAP_KEY='moa-geoapify-api-key-v1';
+const STORAGE_KEY='moa-v1-trips-independent-2026';const app=document.getElementById('app');const modalRoot=document.getElementById('modalRoot');let page='home',filter='all',detailId=null,detailDay=0,plannerTab='schedule',plannerMode='plan';let trips=[];let pendingShareId=null,pendingCollabToken=null,collabId=null,collabMeta=null,collabStops=[],collabStopUnsub=null,collabMetaUnsub=null,collabMemberUnsub=null,collabRole=null,collabList=[],collabListUnsub=null;let routeMap=null,placeSearchTimer=null,placeSearchResults=[],placeSelected=null,cloudUser=null,cloudActive=false,cloudListener=null,cloudRef=null,cloudTimer=null,cloudPending=false,cloudBusy=false,cloudApplying=false,cloudAuthReady=false;const MAP_KEY='moa-geoapify-api-key-v1';
 try{const saved=JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]');trips=Array.isArray(saved)?saved.filter(t=>t&&typeof t.id==='string'):[]}catch(e){console.warn('저장된 데이터 읽기 실패',e);}
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function save(){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(trips));if(cloudActive&&!cloudApplying)queueCloudSave();return true}catch(e){toast('저장에 실패했어요. 저장 공간을 확인해 주세요.');return false}}
@@ -253,7 +253,7 @@ function accountModal(mode='login'){
       '<div class="actionrow"><button class="secondary" type="button" id="cloudLogout">로그아웃</button></div>');
     if(!verified){
       document.getElementById('resendVerify').onclick=async()=>{try{await cloudUser.sendEmailVerification();toast('인증 메일을 다시 보냈어요. 받은편지함을 확인해 주세요.')}catch(e){toast(authError(e))}};
-      document.getElementById('checkVerify').onclick=async()=>{try{await cloudUser.reload();await cloudUser.getIdToken(true);cloudUser=setupCloud().auth.currentUser;accountModal();if(userVerified()&&pendingShareId)openSharedTrip(pendingShareId);if(userVerified())toast('인증이 확인됐어요! 🌷');else toast('아직 인증되지 않았어요. 이메일의 링크를 확인해 주세요.')}catch(e){toast(authError(e))}};
+      document.getElementById('checkVerify').onclick=async()=>{try{await cloudUser.reload();await cloudUser.getIdToken(true);cloudUser=setupCloud().auth.currentUser;accountModal();if(userVerified()&&pendingCollabToken)openCollabInvite(pendingCollabToken);else if(userVerified()&&pendingShareId)openSharedTrip(pendingShareId);if(userVerified())toast('인증이 확인됐어요! 🌷');else toast('아직 인증되지 않았어요. 이메일의 링크를 확인해 주세요.')}catch(e){toast(authError(e))}};
     }
     document.getElementById('cloudLoad').onclick=cloudLoad;
     document.getElementById('cloudUpload').onclick=cloudUpload;
@@ -295,7 +295,7 @@ function accountModal(mode='login'){
         accountModal();toast('가입 완료! 이메일 인증 링크를 확인해 주세요. 🌷');
       }else{
         const credential=await auth.signInWithEmailAndPassword(email,password);
-        cloudUser=credential.user;accountModal();toast('모아에 로그인했어요! 🌿');
+        cloudUser=credential.user;if(pendingCollabToken&&userVerified())await openCollabInvite(pendingCollabToken);else accountModal();toast('모아에 로그인했어요! 🌿');
       }
     }catch(err){toast(authError(err))}finally{submit.disabled=false}
   };
@@ -304,7 +304,7 @@ async function cloudLogin(){
   try{
     const {auth}=setupCloud(),provider=new firebase.auth.GoogleAuthProvider();
     const result=await auth.signInWithPopup(provider);
-    cloudUser=result.user;accountModal();toast('Google 로그인 완료! 🌷');
+    cloudUser=result.user;if(pendingCollabToken&&userVerified())await openCollabInvite(pendingCollabToken);else accountModal();toast('Google 로그인 완료! 🌷');
   }catch(e){toast(authError(e))}
 }
 async function cloudLogout(){
@@ -327,6 +327,7 @@ function requireCollabAuth(){if(!cloudUser||!userVerified())throw Error('공동 
 function leaveCollab(){
   if(collabStopUnsub){collabStopUnsub();collabStopUnsub=null}
   if(collabMetaUnsub){collabMetaUnsub();collabMetaUnsub=null}
+  if(collabMemberUnsub){collabMemberUnsub();collabMemberUnsub=null}
   collabId=null;collabMeta=null;collabStops=[];collabRole=null;
 }
 function watchCollabList(){
@@ -374,6 +375,7 @@ async function openCollab(id){
     if(!member.exists)throw Error('이 공동 여행에 참여 중인 계정이 아니에요.');
     leaveCollab();collabId=id;collabRole=member.data()?.role||'viewer';
     detailId=null;page='dashboard';closeModal();
+    collabMemberUnsub=ref.collection('members').doc(cloudUser.uid).onSnapshot(doc=>{if(collabId!==id)return;if(!doc.exists){toast('공동 여행 참여 권한이 종료됐어요.');leaveCollab();nav('dashboard');return}collabRole=doc.data().role||'viewer';render();},e=>{toast('동행자 권한 확인 실패: '+(e.code||e.message));leaveCollab();nav('dashboard')});
     collabMetaUnsub=ref.onSnapshot(doc=>{
       if(collabId!==id)return;
       if(!doc.exists){toast('공동 여행을 찾을 수 없어요.');leaveCollab();nav('dashboard');return}
