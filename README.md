@@ -1,3 +1,12 @@
+## V2.4 — Mobile-first place search & itinerary mapping (2026-11-11)
+
+- Improved the existing place edit/add form with a mobile-friendly search field. Search runs **only on button click or Enter**, not as-you-type (to respect public geocoding service request limits). The query includes the trip destination for context. Results are more readable with place names and full addresses; choosing a result fills the editable address and attaches numerical latitude/longitude. Saving preserves location coordinates if the address is unchanged; changing the selected address intentionally clears mismatched coordinates.
+- Added **📍 지도 위치 연결** shortcut to itinerary stop cards that lack coordinates (including ones with a manually entered address). It opens the existing stop editor and focuses geolocation search.
+- Added previous/next day buttons beside day/date chip; disabled at itinerary boundaries. Original date tabs and order editing remain.
+- Changed ordered route pills into horizontally swipeable single-line timeline on mobile; reinforced route link label and more concise map explanation. Existing OpenStreetMap Leaflet pin map and Google Maps route opening remain available. Map pins remain limited to geocoded stops/stays/transport with known coordinates; a real driving route is **not** inferred from the Leaflet straight line.
+- No modifications to existing saved trip schema, Firebase or Firestore rules. Selected coordinates remain in the same `stops[]` objects and continue to sync for shared trips via V1.9 patches.
+- JavaScript syntax passed and all six planner tab detail render smoke tests completed. Live map/search end-to-end on iPhone and two-account shared syncing not yet verified. Public OpenStreetMap Nominatim availability/rate limits may impact searches; existing optional Geoapify API key support remains. For best results, use a city name alongside a place name and choose the exact returned candidate.
+
 ## V2.2.1 — Invited-trip list and account UX fixes (2026-11-11)
 
 - Removed the Firebase UID display/copy widget from the signed-in account modal (role lookup continues internally using authenticated UID).
