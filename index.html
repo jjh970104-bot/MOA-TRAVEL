@@ -71,14 +71,14 @@
 <div id="modalRoot"></div><div id="toastRoot"></div>
 <script>
 (function(){'use strict';
-const STORAGE_KEY='moa-v1-trips-independent-2026';const app=document.getElementById('app');const modalRoot=document.getElementById('modalRoot');let page='home',filter='all',detailId=null,detailDay=0,plannerTab='schedule',plannerMode='plan';let trips=[];let pendingShareId=null,pendingCollabToken=null,collabId=null,collabMeta=null,collabStops=[],collabStopUnsub=null,collabMetaUnsub=null,collabMemberUnsub=null,collabRole=null,collabList=[],collabListUnsub=null,sharedTrip=null,sharedBase=null,sharedStateUnsub=null,sharedDirty=false,sharedBusy=false,sharedTimer=null,sharedEditVersion=0,sharedStateRef=null;let routeMap=null,placeSearchTimer=null,placeSearchResults=[],placeSelected=null,cloudUser=null,cloudActive=false,cloudListener=null,cloudRef=null,cloudTimer=null,cloudPending=false,cloudBusy=false,cloudApplying=false,cloudAuthReady=false;const MAP_KEY='moa-geoapify-api-key-v1';
+const STORAGE_KEY='moa-v1-trips-independent-2026';const app=document.getElementById('app');const modalRoot=document.getElementById('modalRoot');let page='home',filter='all',detailId=null,detailDay=0,plannerTab='schedule',plannerMode='plan';let trips=[];let pendingShareId=null,pendingCollabToken=null,collabId=null,collabMeta=null,collabStops=[],collabStopUnsub=null,collabMetaUnsub=null,collabMemberUnsub=null,collabRole=null,collabList=[],collabListUnsub=null,sharedTrip=null,sharedBase=null,sharedStateUnsub=null,sharedDirty=false,sharedBusy=false,sharedTimer=null,sharedEditVersion=0,sharedStateRef=null,sharedSaveFailed=false;let routeMap=null,placeSearchTimer=null,placeSearchResults=[],placeSelected=null,cloudUser=null,cloudActive=false,cloudListener=null,cloudRef=null,cloudTimer=null,cloudPending=false,cloudBusy=false,cloudApplying=false,cloudAuthReady=false;const MAP_KEY='moa-geoapify-api-key-v1';
 try{const saved=JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]');trips=Array.isArray(saved)?saved.filter(t=>t&&typeof t.id==='string'):[]}catch(e){console.warn('저장된 데이터 읽기 실패',e);}
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function save(){
   if(collabId&&detailId==='collab:'+collabId){
     if(!['owner','editor'].includes(collabRole)){toast('보기 전용 여행이라 수정할 수 없어요.');sharedTrip=sharedClone(sharedBase);render();return false}
     if(!sharedTrip||!sharedBase){toast('공동 여행 연결을 확인해 주세요.');return false}
-    sharedDirty=true;sharedEditVersion++;scheduleSharedSave();return true;
+    sharedDirty=true;sharedSaveFailed=false;sharedEditVersion++;scheduleSharedSave();return true;
   }
   try{localStorage.setItem(STORAGE_KEY,JSON.stringify(trips));if(cloudActive&&!cloudApplying)queueCloudSave();return true}
   catch(e){toast('저장에 실패했어요. 저장 공간을 확인해 주세요.');return false}
@@ -197,7 +197,7 @@ if(plannerTab==='schedule')main=`<div class="secthead"><h2>${plannerMode==='plan
 if(plannerTab==='stays')main=staysView(t);if(plannerTab==='transport')main=transportView(t);if(plannerTab==='expense')main=expenseView(t);if(plannerTab==='shopping')main=shoppingView(t);if(plannerTab==='checklist')main=checklistView(t);
 const completed=t.stops.filter(x=>x.done).length;
 app.innerHTML=`<div class="detailtop"><button class="back" data-nav="dashboard">← 내 여행으로 돌아가기</button><div class="detailhero"><div><span class="eyebrow">${collabId?"🤝 함께하는 여행 · ":"My little trip · "}${esc(t.destination)}</span><h1>${esc(t.title)} <span style="font-size:20px">✿</span></h1><span class="muted" style="font-size:13px">${duration(t)} · 👥 ${Number(t.people)||1}명</span></div><span style="font-size:57px">${theme(t)[2]}</span></div></div><div class="modebar"><button data-mode="plan" class="${plannerMode==='plan'?'active':''}">✏️ 계획 모드</button><button data-mode="travel" class="${plannerMode==='travel'?'active':''}">🧳 여행 모드</button></div>${plannerNav()}<div class="plannerGrid"><div class="plannerMain"><div class="panel">${main}</div></div><div class="plannerSide"><div class="panel"><h2>💌 여행 한눈에</h2><div class="note">📍 ${esc(t.destination)}<br>👥 ${Number(t.people)||1}명 · ${esc(t.type)}<br>📝 ${esc(t.memo||'특별한 여행 이야기를 채워봐요!')}</div><div class="momoHello"><span class="momoFace">•ᴗ•</span><span>모모가 여행 준비를 응원해요! 🌷</span></div><div class="miniStat" style="margin-top:15px">📍 일정 ${t.stops.length}개 · 방문 ${completed}개</div><div class="actionrow" style="margin-top:14px"><button class="secondary mini" data-add-traveler>👥 여행자 추가</button>${collabId?`<button class="secondary mini" data-collab-members>👥 참여자 관리</button>`:''}<button class="secondary mini" data-share-trip>🔗 여행 공유</button><button class="secondary mini" data-edit>여행 수정</button><button class="secondary mini" data-toggle>${t.status==='done'?'계획 중으로 변경':'다녀온 여행으로 변경'}</button></div></div><div class="panel"><h2>☁️ 나의 데이터</h2><p class="note">여행은 브라우저에 자동 저장돼요. 로그인 후 클라우드 업로드를 완료하면 계정에도 저장돼요. JSON 백업을 함께 보관해 주세요.</p><div class="backupInfo">🌿 수정한 내용은 이 브라우저에 자동 저장돼요.</div><div class="actionrow"><button class="secondary mini" data-export>백업 다운로드</button><button class="secondary mini" data-delete style="color:#ab6a62">여행 삭제</button></div></div></div></div>`;requestAnimationFrame(mountRouteMap);}
-function nav(dest){leaveCollab();if(!['home','dashboard','explore','community'].includes(dest))return;page=dest;detailId=null;document.querySelectorAll('[data-nav]').forEach(el=>el.classList.toggle('active',el.dataset.nav===dest));render();history.replaceState(null,'','#'+dest);window.scrollTo({top:0,behavior:'instant'})}
+function nav(dest){if(collabId&&(sharedDirty||sharedBusy)){toast('☁️ 공동 여행 저장이 완료된 뒤 이동해 주세요.');return}leaveCollab();if(!['home','dashboard','explore','community'].includes(dest))return;page=dest;detailId=null;document.querySelectorAll('[data-nav]').forEach(el=>el.classList.toggle('active',el.dataset.nav===dest));render();history.replaceState(null,'','#'+dest);window.scrollTo({top:0,behavior:'instant'})}
 function render(){if(collabId&&detailId==='collab:'+collabId){if(sharedTrip)detail();else app.innerHTML='<div class="emptyMini">🌿 공동 여행을 불러오고 있어요.</div>'}else if(detailId)detail();else if(page==='home')home();else if(page==='dashboard')dashboard();else coming(page);document.querySelectorAll('.mobilebar button,.topnav button').forEach(el=>el.classList.toggle('active',el.dataset.nav===page))}
 function modal(content){const mapBehind=document.getElementById('routeMapCanvas');if(mapBehind)mapBehind.style.visibility='hidden';modalRoot.innerHTML=`<div class="overlay" id="overlay"><div class="modal" role="dialog" aria-modal="true">${content}</div></div>`;document.body.style.overflow='hidden';const focus=modalRoot.querySelector('input');if(focus)focus.focus()}
 function closeModal(){modalRoot.innerHTML='';document.body.style.overflow='';const mapBehind=document.getElementById('routeMapCanvas');if(mapBehind)mapBehind.style.visibility='visible'}
@@ -336,7 +336,7 @@ function leaveCollab(){
   if(collabStopUnsub){collabStopUnsub();collabStopUnsub=null}
   if(collabMetaUnsub){collabMetaUnsub();collabMetaUnsub=null}
   if(sharedStateUnsub){sharedStateUnsub();sharedStateUnsub=null}
-  clearTimeout(sharedTimer);sharedTimer=null;sharedStateRef=null;sharedTrip=null;sharedBase=null;sharedDirty=false;sharedBusy=false;
+  clearTimeout(sharedTimer);sharedTimer=null;sharedStateRef=null;sharedTrip=null;sharedBase=null;sharedDirty=false;sharedBusy=false;sharedSaveFailed=false;
   if(collabMemberUnsub){collabMemberUnsub();collabMemberUnsub=null}
   collabId=null;collabMeta=null;collabStops=[];collabRole=null;
 }
@@ -357,7 +357,7 @@ async function addTraveler(){
     requireCollabAuth();
     const original=selected(detailId);if(!original)return;
     if(original.collabId){await openCollab(original.collabId);await collabInvite();return}
-    if(!confirm('이 여행에 함께할 여행자를 초대할까요? 현재 버전에서는 날짜별 장소 일정부터 함께 편집할 수 있어요.'))return;
+    if(!confirm('이 여행을 함께 편집할 여행자를 초대할까요? 일정·숙소·교통·경비·쇼핑·체크리스트가 공유돼요. 먼저 백업을 보관하는 걸 권장해요.'))return;
     await startCollab();
   }catch(e){toast('여행자 추가 실패: '+(e.code||e.message));accountModal()}
 }
@@ -433,7 +433,7 @@ function applySharedDiff(remote,delta){
   return merged;
 }
 function scheduleSharedSave(){
-  if(!collabId||!sharedStateRef||!sharedDirty)return;
+  if(!collabId||!sharedStateRef||!sharedDirty||sharedSaveFailed)return;
   clearTimeout(sharedTimer);sharedTimer=setTimeout(flushSharedSave,420);
 }
 async function flushSharedSave(){
@@ -452,11 +452,11 @@ async function flushSharedSave(){
     });
     if(collabId!==id)return;
     sharedBase=sharedClone(merged);
-    if(sharedEditVersion===version){sharedTrip=sharedClone(merged);sharedDirty=false}
+    if(sharedEditVersion===version){sharedTrip=sharedClone(merged);sharedDirty=false;sharedSaveFailed=false}
     else sharedDirty=true;
     toast('☁️ 함께하는 여행 저장 완료');
-  }catch(e){if(collabId===id){sharedDirty=true;toast('⚠️ 공동 여행 저장 실패: '+(e.code||e.message))}}
-  finally{sharedBusy=false;if(collabId===id&&sharedDirty)scheduleSharedSave()}
+  }catch(e){if(collabId===id){sharedDirty=true;sharedSaveFailed=true;toast('⚠️ 공동 여행 저장 실패: '+(e.code||e.message)+' · 다시 저장을 눌러줘.')}}
+  finally{sharedBusy=false;if(collabId===id&&sharedDirty&&!sharedSaveFailed)scheduleSharedSave()}
 }
 async function openCollab(id){
   try{
@@ -477,7 +477,7 @@ async function openCollab(id){
     }
     if(!initial.exists||!initial.data()?.trip)throw Error('공동 여행 초기 데이터가 없어요. 여행장에게 확인해 주세요.');
     leaveCollab();collabId=id;collabRole=member.data()?.role||'viewer';sharedStateRef=stateRef;
-    sharedBase=sharedClone(initial.data().trip);sharedTrip=sharedClone(sharedBase);
+    sharedBase=sharedClone(initial.data().trip);sharedTrip=sharedClone(sharedBase);sharedSaveFailed=false;
     detailId='collab:'+id;detailDay=0;plannerTab='schedule';plannerMode='plan';page='dashboard';closeModal();render();
     collabMemberUnsub=ref.collection('members').doc(cloudUser.uid).onSnapshot(doc=>{
       if(collabId!==id)return;
