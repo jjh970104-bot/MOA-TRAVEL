@@ -87,7 +87,7 @@ service cloud.firestore {
             )
           );
         allow update: if tripOwner(tripId)
-          && memberUid != resource.data.uid
+          && memberUid != request.auth.uid
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['role'])
           && request.resource.data.role in ['editor','viewer'];
         allow delete: if tripOwner(tripId) && memberUid != request.auth.uid;
