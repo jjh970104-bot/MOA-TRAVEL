@@ -1,3 +1,9 @@
+## V2.1 collaboration sync patch (2026-11-11)
+
+A user reported that an expense entered in one browser did not appear in the other account. This is not yet independently reproduced. The realtime shared state listener previously dropped snapshots received while a local write was busy/dirty without scheduling reconciliation. The new `sharedRefreshNeeded` flag and `refreshSharedFromServer` read reconcile the canonical Firebase state after a successful local save. The trip header now explicitly distinguishes `개인 여행` and `공동 여행`; the shared-trip action menu offers a manual server refresh to aid diagnosing stale screens. Member list refresh no longer re-renders while typing in the quick expense form. Firebase rules are unchanged.
+
+Verify with **the shared card labeled 함께하는 여행 on BOTH browsers**, not the original private trip. Enter an expense and wait for the cloud-save success toast, then check the other window's expense tab or use `⋯ 관리 → 공동 여행 최신 정보 확인`. If changes still fail, inspect the browser toast/errors and Firebase state document. Admin role is **not yet provisioned**; no site admin authorization exists.
+
 ## V2.1 (stage 1) — Expense currency + invited-member payer choice
 
 Updated the existing expenses tab and detailed expense entry in `index.html`:
