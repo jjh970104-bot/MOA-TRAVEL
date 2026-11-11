@@ -92,6 +92,26 @@ service cloud.firestore {
           && request.resource.data.role in ['editor','viewer'];
         allow delete: if tripOwner(tripId) && memberUid != request.auth.uid;
       }
+      // One canonical shared trip state for the existing full MOA planner.
+      // Owner creates it; verified members can read; only owners/editors can update.
+      match /state/{stateId} {
+        allow get: if stateId == 'current' && collabMember(tripId);
+        allow list: if false;
+        allow create: if stateId == 'current'
+          && moaVerified()
+          && getAfter(/databases/$(database)/documents/collabTrips/$(tripId)).data.ownerUid == request.auth.uid
+          && request.resource.data.keys().hasOnly(['trip','updatedBy','updatedAt'])
+          && request.resource.data.trip is map
+          && request.resource.data.trip.title is string
+          && request.resource.data.updatedBy == request.auth.uid;
+        allow update: if stateId == 'current'
+          && collabEditor(tripId)
+          && request.resource.data.keys().hasOnly(['trip','updatedBy','updatedAt'])
+          && request.resource.data.trip is map
+          && request.resource.data.trip.title is string
+          && request.resource.data.updatedBy == request.auth.uid;
+        allow delete: if false;
+      }
       match /stops/{stopId} {
         allow get, list: if collabMember(tripId);
         allow create, update: if collabEditor(tripId)
