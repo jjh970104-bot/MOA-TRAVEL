@@ -1,3 +1,15 @@
+## V1.5 — UI and itinerary improvements (2026-11-11)
+- Compact drag handle and larger numbered badges for ordered day stops.
+- Quick-add removed from the schedule to avoid duplicate entry interfaces.
+- Accommodation management: check-in/check-out dates, time, address and notes. Stays appear on each day from check-in through checkout (checkout labeled as departure day).
+- Transport management: flights, train, bus, ferry, rental car, etc., with date/time and route. A booking appears on its departure date.
+- Geo search: manual button click works without an API key through Nominatim/OpenStreetMap for light personal testing; optional Geoapify key may be configured for its alternative geocoding.
+- Editing modal now hides the underlying map and has a stacking order above Leaflet.
+- Local storage key unchanged; Shanghai V14 remains untouched.
+
+### Important map limitations
+The free Nominatim public service is rate-limited and **not suitable as a production-scale geocoder**. Never enable client-side autocomplete over public Nominatim. The current request is only sent on explicit Search button presses, with a client cooldown; for a public multiuser service, provision a commercial or self-hosted search backend. OSM map tiles may also be throttled or fail in some regions. Geoapify browser keys must be restricted by referrer and usage limits. Map pins need selected coordinates; typed-only addresses do not automatically receive coordinates.
+
 # 모아(MOA) V1.4
 
 Standalone travel planner hosted on GitHub Pages. This repository is entirely separate from Shanghai V14.
