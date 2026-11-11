@@ -1,3 +1,11 @@
+## V1.8 UX simplification — Add traveler (2026-11-11)
+
+The separate **공동 여행** section has been removed from the dashboard. Open a personal trip and select **👥 여행자 추가**. On first use, this provisions a separate collaborative schedule backing store and opens an invitation prompt; on later use, it opens the associated collaborative schedule and produces an invitation link. Existing private trip details (stays, expenses, shopping, transport, etc.) remain available through the **original travel card and detail view**, and a **🤝 공동 일정 열기** button provides access to the separately synced schedule. A recipient's shared schedule appears as a single travel card under **내 여행**, not as a second section.
+
+**Important functional limitation:** this UX simplifies navigation but still does not turn the existing private trip into a fully shared trip. The collaborative stops are a separate copy and edits there do not sync back to the private trip timeline. Only collaborative stops sync live between members. Do not assume bookings, expenses, shopping and checklist are shared. Full integration and account-scoped unified travel storage remain future work.
+
+Existing V1.8 Firestore rules must be published before using Add traveler, exactly as documented below.
+
 ## V1.8 — collaborative schedule MVP (2026-11-11)
 
 **Requires manually publishing the latest `firestore.rules` in Firebase > Firestore Database > Rules.** GitHub commits do not deploy Firestore rules.
