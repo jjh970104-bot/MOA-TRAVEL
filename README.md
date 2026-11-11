@@ -1,3 +1,11 @@
+## V2.2.1 — Invited-trip list and account UX fixes (2026-11-11)
+
+- Removed the Firebase UID display/copy widget from the signed-in account modal (role lookup continues internally using authenticated UID).
+- The My Trips dashboard includes *invited shared-trip index entries* in all/planned/completed counters, de-duplicated against an existing personal trip linked by `collabId` or `sourceTripId`. Invited trips without known completion status count as planning.
+- Invited-only cards now have a **목록에서 제거** action that deletes only `users/{signedInUid}/collaborations/{tripId}`, an index owned by the current user. It never deletes `collabTrips/{tripId}`, member documents, the original owner's trip, or another person's account data. The signed-in user can still technically retain membership; the action is a **hide/remove from my list**, not a full collaboration leave or destruction. Trip-owning linked cards are not eligible. Confirm and select the specific stale card.
+- Existing Firebase security rules already restrict collaboration index writes to the owning authenticated user. No Firestore rules change required for this release.
+- Isolated dashboard smoke tests checked mixed personal + invited records, statuses and duplicate links, and JavaScript syntax passed. Real Firebase live testing on the user's account remains to be done.
+
 ## MOA V2.2 — Site administrator center (2026-11-11)
 
 Admin foundation has been committed to `index.html` and `firestore.rules`. **Not yet activated for any user** until the actual owner's UID is provisioned using Firebase Console and the updated rules are published. Do not infer the owner's UID from their email, nickname, GitHub account or this README.
