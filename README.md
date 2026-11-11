@@ -1,3 +1,18 @@
+## V1.6 — Firebase Auth wired (2026-11-11)
+
+MOA's GitHub Pages client has been configured for the **new independent Firebase project** `moa-travel-1b87d` (not Shanghai V14). Public Firebase web app configuration is in `firebase-config.js`, without any private service-account key.
+
+UI: email/password sign-up (nickname, password confirmation), email verification and resend, login, password-reset email, optional Google sign-in, logout, and explicit options to upload current local trips or replace with cloud trips. The local data key remains unchanged. Cloud synchronization is enabled only after the user elects upload/load, not merely upon signing in.
+
+**Firebase Console actions still required (not deployed by GitHub):**
+1. Authentication > Sign-in method: enable Email/Password and Google.
+2. Authentication > Settings > Authorized domains: add `jjh970104-bot.github.io`.
+3. Firestore Database: create a database in the **MOA** project.
+4. Firestore > Rules: paste the complete `firestore.rules` file from this repository and click **Publish**. Deploying to GitHub does NOT publish Firebase rules.
+5. Test account registration, Firebase verification email, and cloud upload/load with dummy data; use separate browsers/devices to test after preserving a JSON backup.
+
+**Not production-ready:** no account deletion, privacy/legal pages, rate limits, session-scoped local-data isolation, or multi-user edit conflict resolution yet. On a shared browser, prior local travel data may remain after sign-out; do not test with personal travel data on shared devices. The prototype stores a trip array in a single Firestore document.
+
 ## V1.5.1 — Daily itinerary includes accommodation and transport
 - The day planner and route sequence now combine accommodation, transportation bookings and ordinary stops.
 - Accommodation active on a date (from check-in to checkout) appears first in the list and route; transport bookings for that day follow, ordered by departure time, then manually ordered places.
