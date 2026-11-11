@@ -36,6 +36,91 @@ service cloud.firestore {
       allow delete: if request.auth != null
         && resource.data.ownerUid == request.auth.uid;
     }
+
+    // V1.8 collaboration: member access is enforced on every document.
+    function moaVerified() {
+      return request.auth != null && request.auth.token.email_verified == true;
+    }
+    function tripOwner(tripId) {
+      return moaVerified()
+        && get(/databases/$(database)/documents/collabTrips/$(tripId)).data.ownerUid == request.auth.uid;
+    }
+    function collabMember(tripId) {
+      return moaVerified()
+        && exists(/databases/$(database)/documents/collabTrips/$(tripId)/members/$(request.auth.uid));
+    }
+    function collabEditor(tripId) {
+      return collabMember(tripId)
+        && get(/databases/$(database)/documents/collabTrips/$(tripId)/members/$(request.auth.uid)).data.role in ['owner','editor'];
+    }
+    match /users/{userId}/collaborations/{tripId} {
+      allow read, write: if moaVerified() && request.auth.uid == userId;
+    }
+    match /collabTrips/{tripId} {
+      allow get, list: if collabMember(tripId);
+      allow create: if moaVerified()
+        && request.resource.data.keys().hasOnly(['ownerUid','title','destination','start','end','createdAt'])
+        && request.resource.data.ownerUid == request.auth.uid
+        && request.resource.data.title is string
+        && request.resource.data.destination is string;
+      allow update: if tripOwner(tripId)
+        && request.resource.data.ownerUid == resource.data.ownerUid;
+      allow delete: if false;
+      match /members/{memberUid} {
+        allow get, list: if collabMember(tripId);
+        allow create: if moaVerified()
+          && request.auth.uid == memberUid
+          && request.resource.data.uid == memberUid
+          && (
+            (
+              request.resource.data.role == 'owner'
+              && getAfter(/databases/$(database)/documents/collabTrips/$(tripId)).data.ownerUid == memberUid
+              && request.resource.data.keys().hasOnly(['uid','role','name','joinedAt'])
+            )
+            ||
+            (
+              request.resource.data.role == 'editor'
+              && request.resource.data.keys().hasOnly(['uid','role','name','inviteId','joinedAt'])
+              && request.resource.data.inviteId is string
+              && exists(/databases/$(database)/documents/collabInvites/$(request.resource.data.inviteId))
+              && get(/databases/$(database)/documents/collabInvites/$(request.resource.data.inviteId)).data.tripId == tripId
+            )
+          );
+        allow update: if tripOwner(tripId)
+          && memberUid != resource.data.uid
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['role'])
+          && request.resource.data.role in ['editor','viewer'];
+        allow delete: if tripOwner(tripId) && memberUid != request.auth.uid;
+      }
+      match /stops/{stopId} {
+        allow get, list: if collabMember(tripId);
+        allow create, update: if collabEditor(tripId)
+          && request.resource.data.keys().hasOnly(['name','day','time','address','note','order','updatedBy'])
+          && request.resource.data.name is string
+          && request.resource.data.name.size() <= 90
+          && request.resource.data.day is int
+          && request.resource.data.day >= 0
+          && request.resource.data.day < 120
+          && request.resource.data.time is string
+          && request.resource.data.address is string
+          && request.resource.data.note is string
+          && request.resource.data.order is number
+          && request.resource.data.updatedBy == request.auth.uid;
+        allow delete: if collabEditor(tripId);
+      }
+    }
+    match /collabInvites/{token} {
+      allow get: if moaVerified();
+      allow list: if false;
+      allow create: if moaVerified()
+        && request.resource.data.keys().hasOnly(['tripId','ownerUid','title','destination','createdAt'])
+        && request.resource.data.tripId is string
+        && request.resource.data.ownerUid == request.auth.uid
+        && tripOwner(request.resource.data.tripId);
+      allow update: if false;
+      allow delete: if moaVerified()
+        && resource.data.ownerUid == request.auth.uid;
+    }
     match /{document=**} { allow read, write: if false; }
   }
 }
