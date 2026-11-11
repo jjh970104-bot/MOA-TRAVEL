@@ -1,3 +1,11 @@
+## V2.5 — Simplified account UI and optional mapping (2026-11-11)
+
+- Reworked the signed-in **내 계정** modal to lead with avatar, name, email, verification status, and logout. Removed the visible storage-mode text from the primary profile panel and the prominent cloud upload/download buttons and technical JSON backup instructions.
+- Preserved **☁️ 클라우드 여행 불러오기** / **현재 여행 업로드**, their original button IDs and event handlers, storage-mode status and backup warning inside a collapsed **데이터 관리** section. This is UI simplification only: **private-trip localStorage / optional Firebase cloud synchronization behavior remains unchanged**. It is not correct to imply automatic cloud storage for someone who has not enabled it. Existing administrator entry remains available only after validated admin access.
+- Place geosearch is explicitly marked **지도 위치 연결 (시험 기능)** and collapsed within the stop editor. Removed noisy geocoding shortcuts from every itinerary card.
+- Day's stop order remains a compact horizontally swipeable timeline. The Leaflet map is collapsed in an optional **지도 미리보기 (시험 기능)** section; map instance initialization is delayed until the section is opened to avoid zero-size rendering. Location metadata and search implementation are retained, not deleted, for future improvement.
+- No Firebase rules or stored trip schema changes. JavaScript syntax validation and static expected-controls checks passed. Browser visual testing and opt-in map behavior require device verification.
+
 ## V2.4 — Mobile-first place search & itinerary mapping (2026-11-11)
 
 - Improved the existing place edit/add form with a mobile-friendly search field. Search runs **only on button click or Enter**, not as-you-type (to respect public geocoding service request limits). The query includes the trip destination for context. Results are more readable with place names and full addresses; choosing a result fills the editable address and attaches numerical latitude/longitude. Saving preserves location coordinates if the address is unchanged; changing the selected address intentionally clears mismatched coordinates.
