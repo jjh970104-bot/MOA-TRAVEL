@@ -458,8 +458,10 @@ async function openCollabInvite(token){
       const b=document.getElementById('acceptCollabInvite');b.disabled=true;
       try{
         const uid=cloudUser.uid,tripRef=db.collection('collabTrips').doc(v.tripId);
-        await tripRef.collection('members').doc(uid).set({uid,role:'editor',name:cloudUser.displayName||cloudUser.email||'동행자',inviteId:token,joinedAt:firebase.firestore.FieldValue.serverTimestamp()});
-        await db.collection('users').doc(uid).collection('collaborations').doc(v.tripId).set({title:v.title||'공동 여행',destination:v.destination||'',role:'editor'});
+        const memberRef=tripRef.collection('members').doc(uid);
+        const existing=await memberRef.get();
+        if(!existing.exists)await memberRef.set({uid,role:'editor',name:cloudUser.displayName||cloudUser.email||'동행자',inviteId:token,joinedAt:firebase.firestore.FieldValue.serverTimestamp()});
+        await db.collection('users').doc(uid).collection('collaborations').doc(v.tripId).set({title:v.title||'공동 여행',destination:v.destination||'',role:existing.exists?(existing.data()?.role||'viewer'):'editor'});
         history.replaceState(null,'','#dashboard');
         await openCollab(v.tripId);
         toast('공동 여행에 참여했어요! 🌷');
@@ -588,7 +590,7 @@ document.addEventListener('dragover',e=>{let item=e.target.closest('.entry[data-
 document.addEventListener('dragleave',e=>{let item=e.target.closest('.entry[data-itinerary-key]');if(item)item.classList.remove('drop-target')});
 document.addEventListener('drop',e=>{let item=e.target.closest('.entry[data-itinerary-key]');if(!item||!draggedStopId)return;e.preventDefault();let from=draggedStopId;draggedStopId=null;document.querySelectorAll('.entry').forEach(n=>n.classList.remove('dragging','drop-target'));reorderItinerary(from,item.dataset.itineraryKey)});
 document.addEventListener('dragend',()=>{draggedStopId=null;document.querySelectorAll('.entry').forEach(n=>n.classList.remove('dragging','drop-target'))});
-modalRoot.addEventListener('click',e=>{if(e.target.id==='overlay')closeModal()});window.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()});window.addEventListener('load',()=>{try{if(cloudConfig()&&typeof firebase!=='undefined'){setupCloud().auth.onAuthStateChanged(u=>{cloudUser=u;cloudAuthReady=true;const b=document.getElementById('accountButton');if(b)b.textContent=u?'☁️ '+(u.displayName||'로그인됨'):'☁️ 계정/저장';if(!u){disconnectCloud();leaveCollab();if(collabListUnsub){collabListUnsub();collabListUnsub=null}collabList=[];}else watchCollabList();if(u&&pendingCollabToken&&userVerified())openCollabInvite(pendingCollabToken);if(u&&pendingShareId&&userVerified())openSharedTrip(pendingShareId);else if(!u&&pendingShareId)accountModal()})}}catch(e){console.warn('Firebase 초기화 보류',e)}});const initial=location.hash.slice(1);if(initial.startsWith('share=')){pendingShareId=initial.slice(6)}if(initial.startsWith('collab=')){pendingCollabToken=initial.slice(7)}if(['home','dashboard','explore','community'].includes(initial))page=initial;render();
+modalRoot.addEventListener('click',e=>{if(e.target.id==='overlay')closeModal()});window.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()});window.addEventListener('load',()=>{try{if(cloudConfig()&&typeof firebase!=='undefined'){setupCloud().auth.onAuthStateChanged(u=>{cloudUser=u;cloudAuthReady=true;const b=document.getElementById('accountButton');if(b)b.textContent=u?'☁️ '+(u.displayName||'로그인됨'):'☁️ 계정/저장';if(!u){disconnectCloud();leaveCollab();if(collabListUnsub){collabListUnsub();collabListUnsub=null}collabList=[];}else watchCollabList();if(u&&pendingCollabToken&&userVerified())openCollabInvite(pendingCollabToken);else if(u&&pendingShareId&&userVerified())openSharedTrip(pendingShareId);else if(!u&&pendingShareId)accountModal()})}}catch(e){console.warn('Firebase 초기화 보류',e)}});const initial=location.hash.slice(1);if(initial.startsWith('share=')){pendingShareId=initial.slice(6)}if(initial.startsWith('collab=')){pendingCollabToken=initial.slice(7)}if(['home','dashboard','explore','community'].includes(initial))page=initial;render();
 })();
 </script>
 </body></html>
