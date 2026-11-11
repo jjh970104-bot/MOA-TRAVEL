@@ -14,6 +14,27 @@ service cloud.firestore {
         && request.resource.data.trips is list
         && request.resource.data.updatedBy == request.auth.uid;
     }
+    // V2.2 admin roles: only Firebase Console/Admin SDK may provision roles.
+    // Browser users cannot assign or elevate themselves.
+    function moaAdmin() {
+      return request.auth != null
+        && request.auth.token.email_verified == true
+        && exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+        && get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.enabled == true
+        && get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.role == 'superadmin';
+    }
+    match /admins/{uid} {
+      allow get: if request.auth != null
+        && request.auth.uid == uid
+        && request.auth.token.email_verified == true;
+      allow list, create, update, delete: if false;
+    }
+    // Reserved server-managed aggregate document; no private trip access.
+    match /adminMetrics/{metricId} {
+      allow get: if moaAdmin() && metricId == 'overview';
+      allow list, create, update, delete: if false;
+    }
+
     // Unlisted invitation snapshots: anyone with a high-entropy link ID
     // still needs an authenticated and email-verified MOA account to view.
     // The owner alone can publish, refresh or revoke a share.
