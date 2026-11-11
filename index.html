@@ -343,6 +343,7 @@
 .v28-current-day button{white-space:nowrap;font-size:11px}
 @media(max-width:600px){.v28-day-strip .v28-daytab{min-width:135px;max-width:155px;min-height:72px;padding:10px 12px}.v28-daytab b{font-size:13px}.v28-current-day{padding:13px;gap:8px}.v28-current-day h3{font-size:15px}.v28-current-day button{font-size:10px;padding:8px}}
 
+.v28-day-strip{flex-wrap:nowrap!important}.v28-itinerary-card.dragging{opacity:.55}.v28-itinerary-card.drop-target{border-color:#81b38e;background:#f2f9f2}
 </style>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/><script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script><script defer src="https://www.gstatic.com/firebasejs/13.2.0/firebase-app-compat.js"></script><script defer src="https://www.gstatic.com/firebasejs/13.2.0/firebase-auth-compat.js"></script><script defer src="https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore-compat.js"></script><script defer src="firebase-config.js"></script></head>
 <body>
@@ -576,7 +577,12 @@ function dayDateLabel(t,index){
 }
 function dayTheme(t,index){
  const key=isoForDay(t,index);
- return String(t?.dayThemes?.[key]||'').trim();
+ if(t?.dayThemes?.[key])return String(t.dayThemes[key]).trim();
+ if(t?.importedFrom==='munggu-nyangi-shanghai-v14-backup'&&t.start==='2026-12-22'){
+   const themes=['출발하는 날 ✈️','상하이 디즈니랜드 🎠','크리스마스이브 데이트 🎄','상하이 크리스마스 🎄','예원 야경 & 시내 🏮','한국으로 돌아오는 날 🛬'];
+   return themes[index]||'';
+ }
+ return '';
 }
 function editDayTheme(){
  const t=selected(detailId);if(!t)return;
@@ -690,7 +696,7 @@ function itineraryRows(t){
    const card=top+meta+(mode?(note?'<p class="v28-travel-note">'+esc(note)+'</p>':''):extra)+addr+'</div>'+actions+'</div>';
    let transfer='';
    if(!candidate&&previous){
-     const leg=x.kind==='stop'?(s.leg||{}):{};
+     const leg=s.leg||((t.importedFrom==='munggu-nyangi-shanghai-v14-backup'&&x.kind==='stop'&&s.name==='신천지')?{mode:'택시 / 디디',minutes:'20'}:{});
      transfer='<div class="v28-transfer"><span>↓ '+formatTravelLeg(leg)+'</span>'+
        (!mode&&x.kind==='stop'?'<button type="button" class="secondary mini" data-edit-leg="'+esc(s.id)+'">이동 수정</button>':'')+'</div>';
    }
@@ -1514,11 +1520,11 @@ document.addEventListener('submit',e=>{if(e.target?.id!=='quickExpenseForm')retu
 document.addEventListener('change',e=>{if(e.target?.id!=='tripCurrency')return;if(collabId&&collabRole==='viewer'){toast('보기 전용 여행이에요.');render();return}const t=selected(detailId),currency=e.target.value;if(!t||!Object.hasOwn(MOA_CURRENCIES,currency))return;t.localCurrency=currency;if(save()){detail();toast('여행지 기본 통화를 변경했어요.')}});
 document.addEventListener('change',e=>{const el=e.target;if(!el.matches('input[data-toggle-item]'))return;if(collabId&&collabRole==='viewer'){toast('보기 전용 여행이에요.');render();return}const [k,id]=el.dataset.toggleItem.split(':'),t=selected(detailId),v=t?.[collectionKey(k)]?.find(x=>x.id===id);if(v){v.done=el.checked;if(save())detail()}});
 let draggedStopId=null;
-document.addEventListener('dragstart',e=>{const item=e.target.closest('.entry[draggable=true]');if(!item)return;draggedStopId=item.dataset.itineraryKey;item.classList.add('dragging');if(e.dataTransfer){e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',draggedStopId)}});
-document.addEventListener('dragover',e=>{let item=e.target.closest('.entry[data-itinerary-key]');if(!item||!draggedStopId)return;e.preventDefault();item.classList.add('drop-target')});
-document.addEventListener('dragleave',e=>{let item=e.target.closest('.entry[data-itinerary-key]');if(item)item.classList.remove('drop-target')});
-document.addEventListener('drop',e=>{let item=e.target.closest('.entry[data-itinerary-key]');if(!item||!draggedStopId)return;e.preventDefault();let from=draggedStopId;draggedStopId=null;document.querySelectorAll('.entry').forEach(n=>n.classList.remove('dragging','drop-target'));reorderItinerary(from,item.dataset.itineraryKey)});
-document.addEventListener('dragend',()=>{draggedStopId=null;document.querySelectorAll('.entry').forEach(n=>n.classList.remove('dragging','drop-target'))});
+document.addEventListener('dragstart',e=>{const item=e.target.closest('.v28-itinerary-card[draggable=true],.entry[draggable=true]');if(!item)return;draggedStopId=item.dataset.itineraryKey;item.classList.add('dragging');if(e.dataTransfer){e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',draggedStopId)}});
+document.addEventListener('dragover',e=>{let item=e.target.closest('.v28-itinerary-card[data-itinerary-key],.entry[data-itinerary-key]');if(!item||!draggedStopId)return;e.preventDefault();item.classList.add('drop-target')});
+document.addEventListener('dragleave',e=>{let item=e.target.closest('.v28-itinerary-card[data-itinerary-key],.entry[data-itinerary-key]');if(item)item.classList.remove('drop-target')});
+document.addEventListener('drop',e=>{let item=e.target.closest('.v28-itinerary-card[data-itinerary-key],.entry[data-itinerary-key]');if(!item||!draggedStopId)return;e.preventDefault();let from=draggedStopId;draggedStopId=null;document.querySelectorAll('.v28-itinerary-card,.entry').forEach(n=>n.classList.remove('dragging','drop-target'));reorderItinerary(from,item.dataset.itineraryKey)});
+document.addEventListener('dragend',()=>{draggedStopId=null;document.querySelectorAll('.v28-itinerary-card,.entry').forEach(n=>n.classList.remove('dragging','drop-target'))});
 modalRoot.addEventListener('click',e=>{if(e.target.id==='overlay')closeModal()});window.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()});window.addEventListener('load',()=>{try{if(cloudConfig()&&typeof firebase!=='undefined'){setupCloud().auth.onAuthStateChanged(u=>{cloudUser=u;cloudAuthReady=true;checkAdminAccess();const b=document.getElementById('accountButton');if(b)b.textContent=u?'👤 '+(u.displayName||'내 계정'):'로그인 / 회원가입';if(!u){adminCheckToken++;adminAuthorized=false;adminMetrics=null;disconnectCloud();leaveCollab();detailId=null;if(collabListUnsub){collabListUnsub();collabListUnsub=null}collabList=[];}else watchCollabList();if(page==='dashboard'&&!guestPreviewToken)render();if(guestPreviewToken)openGuestPreview(guestPreviewToken);else if(u&&pendingCollabToken&&userVerified())openCollabInvite(pendingCollabToken);else if(u&&pendingShareId&&userVerified())openSharedTrip(pendingShareId);else if(!u&&pendingShareId)accountModal()})}}catch(e){console.warn('Firebase 초기화 보류',e)}});const initial=location.hash.slice(1);if(initial.startsWith('share=')){pendingShareId=initial.slice(6)}if(initial.startsWith('collab=')){pendingCollabToken=initial.slice(7)}if(initial.startsWith('guest=')){guestPreviewToken=initial.slice(6);page='guest'}if(['home','dashboard','explore','community'].includes(initial))page=initial;render();
 })();
 </script>
