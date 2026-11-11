@@ -365,7 +365,7 @@ function expenseView(t){
   '<div class="v21-moneygroups">'+sums.map(x=>'<div class="v21-moneygroup"><strong>'+x.currency+' · '+MOA_CURRENCIES[x.currency]+'</strong><div><span>총 '+money(x.sum)+'</span><small>결제 완료 '+money(x.paid)+' · 예정 '+money(x.pending)+'</small></div></div>').join('')+'</div>'+
   '<form id="quickExpenseForm" class="quickExpense" novalidate><div class="quickExpenseTitle">✿ 경비 바로 추가하기</div><div class="quickExpenseFields v21-expense-fields">'+
     '<label>항목명<input name="name" type="text" maxlength="80" placeholder="예: 저녁 식사" required></label>'+
-    '<label>결제 통화<select name="currency">'+currencyChoices(t,'KRW').replace('value="KRW" selected','value="KRW"') .replace('value="'+mainCurrency+'"','value="'+mainCurrency+'" selected')+'</select></label>'+
+    '<label>결제 통화<select name="currency">'+currencyChoices(t,mainCurrency)+'</select></label>'+
     '<label>금액<input name="amount" inputmode="decimal" type="number" min="0" max="10000000000" step="any" placeholder="예: 150" required></label>'+
     '<label>결제자'+payerChoiceHTML(null)+'</label>'+
     '<label class="quickCheck"><input type="checkbox" name="paid"> 결제 완료</label></div>'+
@@ -544,6 +544,8 @@ function leaveCollab(){
   if(sharedStateUnsub){sharedStateUnsub();sharedStateUnsub=null}
   clearTimeout(sharedTimer);sharedTimer=null;sharedStateRef=null;sharedTrip=null;sharedBase=null;sharedDirty=false;sharedBusy=false;sharedSaveFailed=false;sharedDeferredRemote=null;
   if(collabMemberUnsub){collabMemberUnsub();collabMemberUnsub=null}
+  if(expenseMembersUnsub){expenseMembersUnsub();expenseMembersUnsub=null}
+  expenseMembers=[];
   collabId=null;collabMeta=null;collabStops=[];collabRole=null;
 }
 function watchCollabList(){
@@ -691,6 +693,11 @@ async function openCollab(id){
       if(!doc.exists){toast('공동 여행 참여 권한이 종료됐어요.');leaveCollab();nav('dashboard');return}
       collabRole=doc.data().role||'viewer';render();
     },e=>{toast('동행자 권한 확인 실패: '+(e.code||e.message));leaveCollab();nav('dashboard')});
+    expenseMembersUnsub=ref.collection('members').onSnapshot(snap=>{
+      if(collabId!==id)return;
+      expenseMembers=snap.docs.map(doc=>({uid:doc.id,...doc.data()}));
+      if(plannerTab==='expense'&&!modalRoot.querySelector('#overlay'))render();
+    },err=>{if(collabId===id)toast('결제자 목록 불러오기 실패: '+(err.code||err.message))});
     collabMetaUnsub=ref.onSnapshot(doc=>{
       if(collabId!==id)return;
       if(!doc.exists){toast('공동 여행을 찾을 수 없어요.');leaveCollab();nav('dashboard');return}
