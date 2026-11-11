@@ -1,3 +1,11 @@
+## V1.5.1 — Daily itinerary includes accommodation and transport
+- The day planner and route sequence now combine accommodation, transportation bookings and ordinary stops.
+- Accommodation active on a date (from check-in to checkout) appears first in the list and route; transport bookings for that day follow, ordered by departure time, then manually ordered places.
+- Existing stay and transportation records are **referenced**, not duplicated as ordinary stops. Editing booking data updates the day view automatically; deletion removes it without orphan copies.
+- Route map pins are only shown for entries with saved coordinates. Accommodation/transport can appear in numbered route lists before they have map coordinates.
+- Drag-and-drop continues to reorder ordinary stops only; fixed booking priority is intentional.
+- Existing browser storage key and Shanghai V14 remain unchanged.
+
 ## V1.5 — UI and itinerary improvements (2026-11-11)
 - Compact drag handle and larger numbered badges for ordered day stops.
 - Quick-add removed from the schedule to avoid duplicate entry interfaces.
