@@ -1,3 +1,18 @@
+## V2.0 — Compact responsive trip-detail layout (2026-11-11)
+
+**UI-only release: no Firebase schema or Firestore-rule changes.** Existing V1.9 collaboration, trip creation/editing, itinerary mapping and ordering, stay/transport, expenses, shopping, checklist, JSON backup and share links are preserved.
+
+Changes:
+- Rebuilt the trip detail page as a **single-column workspace**, removing the oversized right-hand sidebar and redundant mascot/overview sections.
+- Condensed header with trip name, dates, destination, shared/cloud-save status, quick itinerary counts, and a prominent **👥 여행자 추가** button.
+- Moved rarely used controls (trip edit, done/planning status, public snapshot/share link, backup, delete, member controls) into a small **⋯ 관리** menu. Primary 6 planner tabs remain available.
+- Mobile breakpoints use **two rows of three planner tabs**, full-width plan/travel mode toggle, compact schedule cards, a smaller route-map panel and two-column quick expense entry.
+- On narrow screens, expense and shopping tables render as **stacked labeled item cards**, with existing interactive checkbox/edit/delete controls preserved.
+- Trip memo/details and backup/status information can be expanded as needed in accessible native `details` sections.
+- No data migration needed, no localStorage key change, and no new permissions requested.
+
+Validation: JavaScript syntax verified across all embedded inline scripts; detail rendering smoke-tested for all six planner tabs with representative local trip data; GitHub files committed. Actual cross-device visual/interaction review has not yet been performed. Recommended test: hard refresh, inspect desktop and mobile widths, check each planner tab and its edit dialogs, test traveler invite, and verify shared edits sync using the two accounts.
+
 ## V1.9 — Unified multi-user editing in the existing planner (2026-11-11)
 
 **IMPORTANT: Update Firebase Console → Firestore Database → Rules using the latest `firestore.rules` file and click Publish. The GitHub code deploy does NOT deploy Firestore rules.** New permission for `collabTrips/{tripId}/state/current` is necessary for the shared planner.
