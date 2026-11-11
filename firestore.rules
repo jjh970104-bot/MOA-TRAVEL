@@ -48,15 +48,13 @@ service cloud.firestore {
         && request.resource.data.start is string
         && request.resource.data.end is string
         && request.resource.data.stops is list
-        && request.resource.data.stops.size() <= 150
-        && request.resource.size() < 150000;
+        && request.resource.data.stops.size() <= 150;
       allow update: if moaVerified()
         && resource.data.ownerUid == request.auth.uid
         && request.resource.data.ownerUid == request.auth.uid
         && request.resource.data.keys().hasOnly(['ownerUid','title','destination','start','end','stops','createdAt'])
         && request.resource.data.stops is list
-        && request.resource.data.stops.size() <= 150
-        && request.resource.size() < 150000;
+        && request.resource.data.stops.size() <= 150;
       allow delete: if moaVerified() && resource.data.ownerUid == request.auth.uid;
     }
     // Unlisted invitation snapshots: anyone with a high-entropy link ID
