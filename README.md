@@ -1,3 +1,22 @@
+## V1.8 — collaborative schedule MVP (2026-11-11)
+
+**Requires manually publishing the latest `firestore.rules` in Firebase > Firestore Database > Rules.** GitHub commits do not deploy Firestore rules.
+
+Existing personal trips and V1.7 snapshot links are unchanged. An authenticated, email-verified member can open a **personal trip** and click **🤝 공동 편집 시작** to create a **separate** collaborative workspace. The initial title/destination/dates and up to 200 standard schedule stops are copied, without overwriting their private trip or its cloud backups. Users see collaborative workspaces in **내 여행 → 공동 여행**. Only stop names, day, time, address, and notes are collaboratively editable in this milestone; hotels, transportation bookings, expenses, shopping, checklist, stop ordering and personal trip status remain separate and unshared.
+
+The workspace owner can create a new unlisted invitation at **🔗 공동 편집 초대**. A logged-in, email-verified invitee can follow the invite URL and join as **editor**. Firestore security rules verify the invitation document ID on member creation. Authorized members subscribe in real time to individual `collabTrips/{tripId}/stops/{stopId}` documents. Editing *different stops* avoids clobbering a whole trip array; editing the *same stop simultaneously* is still last-write-wins. Owner may change a member to **viewer** or remove them; changes are checked by rules and subscriber updates. The owner cannot transfer ownership through this UI.
+
+Firestore paths:
+- `collabTrips/{tripId}` — owner and trip metadata
+- `collabTrips/{tripId}/members/{uid}` — verified invitation memberships and roles
+- `collabTrips/{tripId}/stops/{stopId}` — individual, real-time stop documents
+- `collabInvites/{token}` — unlisted invitation credentials; may be forwarded
+- `users/{uid}/collaborations/{tripId}` — per-user workspace index
+
+**Caution:** Invitation URLs do not expire and may be forwarded. No recipient-specific whitelist, invite revocation UI, audit trail, full-trip synchronization, concurrency resolution on a single stop, or production-grade privacy/legal features. Workspace deletion and self-leaving aren't implemented. Test with non-sensitive sample trips. A removed user's list index may remain and open attempts will be denied by security rules.
+
+Verification checklist: after posting rules, create a test workspace from a test trip; generate invite; in an incognito window sign in with a **different** verified MOA account; accept invitation; add a stop there; observe owner window updating; remove editor rights and verify writes are denied; then reenable editor rights.
+
 ## V1.7 — Trip invitation links (2026-11-11)
 
 A logged-in, email-verified member who has enabled cloud saving can open a trip and use **여행 공유**. This publishes an unlisted snapshot in `tripShares/{randomFirestoreID}`, copies a deep-link of the form `/#share=TOKEN` under MOA's existing GitHub Pages path, and lets a signed-in verified recipient **copy** the shared trip into their own local trip list. The owner can refresh a snapshot or revoke its link. Copied trips have new trip IDs and do not share their original edit state.
