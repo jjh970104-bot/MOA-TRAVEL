@@ -570,9 +570,16 @@ async function openCollabInvite(token){
       try{
         const uid=cloudUser.uid,tripRef=db.collection('collabTrips').doc(v.tripId);
         const memberRef=tripRef.collection('members').doc(uid);
-        const existing=await memberRef.get();
-        if(!existing.exists)await memberRef.set({uid,role:'editor',name:cloudUser.displayName||cloudUser.email||'동행자',inviteId:token,joinedAt:firebase.firestore.FieldValue.serverTimestamp()});
-        await db.collection('users').doc(uid).collection('collaborations').doc(v.tripId).set({title:v.title||'공동 여행',destination:v.destination||'',role:existing.exists?(existing.data()?.role||'viewer'):'editor'});
+        let role='editor';
+        try{
+          await memberRef.set({uid,role:'editor',name:cloudUser.displayName||cloudUser.email||'동행자',inviteId:token,joinedAt:firebase.firestore.FieldValue.serverTimestamp()});
+        }catch(joinError){
+          // New invitees cannot read members before joining; returning members can.
+          const existing=await memberRef.get();
+          if(!existing.exists)throw joinError;
+          role=existing.data()?.role||'viewer';
+        }
+        await db.collection('users').doc(uid).collection('collaborations').doc(v.tripId).set({title:v.title||'공동 여행',destination:v.destination||'',role});
         history.replaceState(null,'','#dashboard');
         await openCollab(v.tripId);
         toast('공동 여행에 참여했어요! 🌷');
