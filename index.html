@@ -685,7 +685,7 @@ function editTravelLeg(id){
 function itineraryRows(t){
  const items=itineraryEntries(t);
  if(!items.length)return '<div class="emptyMini">🐣 아직 일정이 비어 있어요.<br>첫 장소를 추가해 볼까요?</div>';
- const confirmed=items.filter(x=>!x.candidate),candidates=items.filter(x=>x.candidate),visible=plannerMode==='travel'?confirmed:confirmed.flatMap(x=>[x,...candidates.filter(c=>c.source?.alternativeFor===x.id&&c.kind==='stop')]).concat(candidates.filter(c=>!confirmed.some(x=>x.id===c.source?.alternativeFor)));
+ const confirmed=items.filter(x=>!x.candidate),candidates=items.filter(x=>x.candidate),visible=plannerMode==='travel'?confirmed:confirmed.flatMap(x=>[x,...candidates.filter(c=>resolvedCandidateParent(t,c.source?.alternativeFor)===x.id&&c.kind==='stop')]).concat(candidates.filter(c=>!confirmed.some(x=>x.id===resolvedCandidateParent(t,c.source?.alternativeFor))));
  let count=0,previous=null;
  return visible.map(x=>{
    const key=esc(itemOrderKey(x)),s=x.source||{},candidate=!!x.candidate;
@@ -700,7 +700,7 @@ function itineraryRows(t){
    const meta='<div class="v28-card-meta"><span>🕒 '+esc(time)+'</span>'+(x.kind==='stop'&&s.type?'<span>'+esc(s.type)+'</span>':'')+(x.kind==='stop'&&s.status&&!candidate?'<span>'+esc(s.status)+'</span>':'')+(candidate?'<span>대체 후보</span>':'')+'</div>';
    const note=x.kind==='stop'?String(s.note||''):String(x.note||'');
    const expenseLabel=x.kind==='stop'?stopExpenseSummary(t,s):'';
-   const parentLabel=candidate&&s.alternativeFor?t.stops.find(v=>v.id===s.alternativeFor)?.name||'연결된 일정 없음':'';
+   const parentLabel=candidate&&s.alternativeFor?t.stops.find(v=>v.id===resolvedCandidateParent(t,s.alternativeFor))?.name||'연결된 일정 없음':'';
    const extraContent=(parentLabel?'<p>↳ '+esc(parentLabel)+'의 대체 후보</p>':'')+
       (note?'<p>'+esc(note).replace(/\n/g,'<br>')+'</p>':'')+
       (x.address?'<p>📍 '+esc(x.address)+'</p>':'')+
@@ -860,9 +860,24 @@ function modal(content){const mapBehind=document.getElementById('routeMapCanvas'
 function closeModal(){modalRoot.innerHTML='';document.body.style.overflow='';const mapBehind=document.getElementById('routeMapCanvas');if(mapBehind)mapBehind.style.visibility='visible';if(collabId&&sharedDeferredRemote&&!sharedDirty&&!sharedBusy){sharedBase=sharedClone(sharedDeferredRemote);sharedTrip=sharedClone(sharedDeferredRemote);sharedDeferredRemote=null;render()}}
 function formTrip(t){if(!cloudUser||!userVerified()){toast('여행을 만들려면 로그인과 이메일 인증이 필요해요.');accountModal();return}const edit=!!t;modal(`<form id="tripForm"><div class="modalhead"><h2>${edit?'여행 정보 수정':'새로운 여행 만들기 ✨'}</h2><button class="iconbtn" type="button" data-close aria-label="닫기">×</button></div><p class="muted tiny" style="margin-top:-10px">가고 싶은 곳과 날짜만 정해도 여행이 시작돼요.</p><div class="field"><label for="title">여행 이름 *</label><input id="title" name="title" maxlength="70" required placeholder="예: 도쿄 맛집 여행" value="${esc(t?.title||'')}"></div><div class="field"><label for="destination">여행지 *</label><select id="destination" name="destination" required>${destinationOptions(t?.destination||'')}</select><input id="destinationCustom" class="v28-custom-destination" name="destinationCustom" maxlength="80" placeholder="국가와 도시를 입력해 주세요 (예: 스페인 바르셀로나)" value="${esc(MOA_DESTINATIONS.some(d=>d[2]===normalizedDestination(t?.destination||''))?'':t?.destination||'')}" hidden></div><div class="formrow"><div class="field"><label for="start">출발일 *</label><input id="start" type="text" name="start" inputmode="numeric" autocomplete="off" data-smart-date required maxlength="10" placeholder="YYYY-MM-DD" value="${esc(t?.start||'')}"><input id="startPicker" data-picker-for="start" type="date" aria-label="달력에서 출발일 선택" class="v28-native-picker" value="${esc(t?.start||'')}"></div><div class="field"><label for="end">귀국일 *</label><input id="end" type="text" name="end" inputmode="numeric" autocomplete="off" data-smart-date required maxlength="10" placeholder="YYYY-MM-DD" value="${esc(t?.end||'')}"><input id="endPicker" data-picker-for="end" type="date" aria-label="달력에서 귀국일 선택" class="v28-native-picker" value="${esc(t?.end||'')}"></div></div><div class="formrow"><div class="field"><label for="people">인원</label><input id="people" type="number" name="people" min="1" max="100" value="${Number(t?.people)||2}"></div><div class="field"><label for="type">여행 스타일</label><select id="type" name="type">${['커플 여행','친구 여행','가족 여행','혼자 여행','기타'].map(s=>`<option ${t?.type===s?'selected':''}>${s}</option>`).join('')}</select></div></div><div class="field"><label for="theme">커버 테마</label><select id="theme" name="theme">${[['city','도시'],['sea','바다'],['mountain','산'],['nature','자연'],['spring','꽃']].map(([k,v])=>`<option value="${k}" ${(t?.theme||'city')===k?'selected':''}>${v}</option>`).join('')}</select></div><div class="field"><label for="memo">여행 메모</label><textarea id="memo" name="memo" maxlength="400" placeholder="여행에서 하고 싶은 것들">${esc(t?.memo||'')}</textarea></div><div class="modalactions"><button class="secondary" type="button" data-close>취소</button><button class="primary" type="submit">${edit?'수정 완료':'여행 만들기'}</button></div></form>`);document.getElementById('tripForm').onsubmit=e=>{e.preventDefault();const f=new FormData(e.currentTarget);const start=String(f.get('start')),end=String(f.get('end'));if(!validIsoDay(start)||!validIsoDay(end)){toast('날짜를 YYYY-MM-DD 형식으로 정확하게 입력해 주세요.');return}if(end<start){toast('귀국일은 출발일 이후여야 해요.');return}if((parseDate(end)-parseDate(start))/86400000>119){toast('여행은 최대 120일까지 등록할 수 있어요.');return}const vals={title:String(f.get('title')).trim(),destination:normalizedDestination(String(f.get('destination'))==='__other__'?String(f.get('destinationCustom')||''):String(f.get('destination'))),start,end,people:Math.min(100,Math.max(1,Number(f.get('people'))||1)),type:String(f.get('type')),theme:String(f.get('theme')),memo:String(f.get('memo')).trim()};if(!vals.title||!vals.destination){toast('여행 이름과 여행지를 입력해 주세요.');return}if(edit){Object.assign(t,vals);if(!save())return;toast('여행 정보를 수정했어요.')}else{t={id:crypto.randomUUID?crypto.randomUUID():`trip-${Date.now()}`,status:'planning',stops:[],createdAt:new Date().toISOString(),...vals};trips.unshift(t);if(!save())return;toast('새 여행이 만들어졌어요! 🌿')}closeModal();detailId=t.id;detailDay=0;page='dashboard';plannerTab='schedule';plannerMode='plan';render()};bindDestinationFields();bindSmartDates()}
 
+
+function resolvedCandidateParent(t,raw){
+ if(!raw)return '';
+ if(t.stops.some(x=>x.id===raw))return raw;
+ if(t.importedFrom!=='munggu-nyangi-shanghai-v14-backup')return raw;
+ const oldNames={'s6':'현지우이치엔 상하이 제일 백화점 점','s3':'푸동 루자쭈이','s41':'와이탄 호텔 바 (1곳 선택)','s12':'신천지','s10':'점도덕 환위후이 점','s18':'난징동루','s15':'예원상성 야경 (豫园商城)','s30':'인민공원'};
+ const name=oldNames[raw];
+ return (name&&t.stops.find(x=>x.name===name)?.id)||raw;
+}
 function linkedStopExpense(t,stop){
  if(!stop)return null;
- return t.expenses.find(e=>e.linkedStopId===stop.id||(stop.expenseId&&e.id===stop.expenseId))||null;
+ const linked=t.expenses.find(e=>e.linkedStopId===stop.id||(stop.expenseId&&e.id===stop.expenseId));
+ if(linked)return linked;
+ if(t.importedFrom==='munggu-nyangi-shanghai-v14-backup'){
+   const matches=t.expenses.filter(e=>!e.linkedStopId&&e.name===stop.name);
+   if(matches.length===1)return matches[0];
+ }
+ return null;
 }
 function stopExpenseSummary(t,stop){
  const expense=linkedStopExpense(t,stop);
@@ -871,7 +886,7 @@ function stopExpenseSummary(t,stop){
  return '';
 }
 function candidateParentOptions(t,stop){
- return '<option value="">연결하지 않음 (독립 후보)</option>'+t.stops.filter(x=>Number(x.day)===detailDay&&x.id!==stop?.id&&!x.candidate).map(x=>'<option value="'+esc(x.id)+'" '+(stop?.alternativeFor===x.id?'selected':'')+'>'+esc(x.name)+'</option>').join('');
+ return '<option value="">연결하지 않음 (독립 후보)</option>'+t.stops.filter(x=>Number(x.day)===detailDay&&x.id!==stop?.id&&!x.candidate).map(x=>'<option value="'+esc(x.id)+'" '+(resolvedCandidateParent(t,stop?.alternativeFor)===x.id?'selected':'')+'>'+esc(x.name)+'</option>').join('');
 }
 function syncStopExpense(t,stop,form){
  let existing=linkedStopExpense(t,stop);const raw=String(form.get('cost')||'').trim();
