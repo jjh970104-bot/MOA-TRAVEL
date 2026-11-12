@@ -1,5 +1,4 @@
 <!doctype html>
-<!-- MOA Pages refresh: traveler profile photos and nickname editor; 2026-11-12 -->
 <html lang="ko">
 <head>
 <meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><meta name="theme-color" content="#f9f7f1"/>
@@ -438,7 +437,7 @@
 .tripgrid>*{min-width:0;max-width:100%;box-sizing:border-box}
 @media(max-width:550px){.newtripCard{min-height:175px}.pagehead h1{font-size:clamp(24px,6vw,30px)}.shell{overflow-x:clip}.v212-find input{font-size:16px}}
 @media(max-width:350px){.v212-find{grid-template-columns:minmax(0,1fr)}}
- .payerChoice{display:flex;flex-direction:column;gap:7px}.payerChoice input[hidden]{display:none!important}\n.moa-member-list{display:grid;gap:10px;margin-top:14px}.moa-member-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;border:1px solid var(--border);padding:12px;border-radius:14px}.moa-member-avatar{width:38px;height:38px;flex:none;border-radius:50%;display:grid;place-items:center;background:#e3eddf;color:var(--greenDark);font-weight:800}.moa-member-info{flex:1;min-width:100px;display:grid;gap:3px}.moa-member-info small{font-size:12px;color:var(--muted)}.moa-member-row .actionrow{display:flex;gap:5px;flex-wrap:wrap}.v212-shop-filters{overflow-x:auto;flex-wrap:wrap}\n.moa-member-avatar{overflow:hidden}.moa-member-avatar img{display:block;width:100%;height:100%;object-fit:cover}.moa-my-profile{background:var(--pale);padding:16px;border-radius:16px;margin:14px 0;display:grid;gap:12px}.moa-profile-preview{display:flex;align-items:center;gap:12px}.moa-profile-preview .moa-member-avatar{height:52px;width:52px}.moa-profile-preview>div{display:grid;gap:4px}.moa-profile-preview small,.moa-member-heading small{color:var(--muted);font-size:12px}.moa-member-heading{display:flex;justify-content:space-between;align-items:center;margin-top:20px}.moa-profile-photo{display:flex;justify-content:center;margin:18px 0}.moa-profile-photo .moa-member-avatar{width:112px;height:112px;font-size:42px}.moa-photo-actions{display:flex;flex-wrap:wrap;justify-content:center;gap:8px}.moa-my-profile .secondary{justify-self:start}@media(max-width:540px){.moa-member-row .actionrow{width:100%}.moa-member-row .actionrow button{flex:1}.moa-my-profile{padding:13px}}\n</style>
+ .payerChoice{display:flex;flex-direction:column;gap:7px}.payerChoice input[hidden]{display:none!important}\n</style>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/><script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script><script defer src="https://www.gstatic.com/firebasejs/13.2.0/firebase-app-compat.js"></script><script defer src="https://www.gstatic.com/firebasejs/13.2.0/firebase-auth-compat.js"></script><script defer src="https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore-compat.js"></script><script defer src="firebase-config.js"></script></head>
 <body>
 <header class="topbar"><div class="shell toprow"><button class="brand" data-nav="home"><span class="brandmark">✿</span><span class="brandtext">moa<span style="color:#8cb397">.</span></span></button><nav class="topnav"><button class="navlink active" data-nav="home">홈</button><button class="navlink" data-nav="about">모아 알아보기</button><button class="navlink" data-nav="dashboard">내 여행</button><button class="navlink" data-nav="explore">여행 탐색</button><button class="navlink" data-nav="community">커뮤니티</button></nav><div class="topactions"><button class="secondary" id="accountButton" data-account>로그인 / 회원가입</button><button class="primary" id="topCreate">＋ 여행 만들기</button></div></div></header>
@@ -1054,7 +1053,7 @@ function expenseAmountValid(amount,currency){
 let expenseMemberFilter='all';
 function expenseView(t){
   const arr=t.expenses;
-  const filtered=collabId&&expenseMemberFilter!=='all'?arr.filter(x=>expenseMemberFilter==='legacy'?!x.payerUid:x.payerUid===expenseMemberFilter):arr;
+  const filtered=collabId&&expenseMemberFilter!=='all'?arr.filter(x=>x.payerUid===expenseMemberFilter):arr;
   const currencies=[...new Set(['KRW',localCurrency(t),...arr.map(expenseCurrency)])];
   const sums=currencies.map(c=>({currency:c,...currencyTotals(arr,c)})).filter(v=>v.sum||v.currency==='KRW'||v.currency===localCurrency(t));
   const mainCurrency=localCurrency(t);
@@ -1069,7 +1068,7 @@ function expenseView(t){
     '<label>결제자'+payerChoiceHTML(null)+'</label>'+
     '<label class="quickCheck"><input type="checkbox" name="paid"> 결제 완료</label></div>'+
     '<button type="submit" class="primary expenseSubmit">＋ 경비 저장하기</button><p id="expenseError" class="formError" role="alert" hidden></p></form>'+
-  (collabId&&expenseMembers.length?'<div class="v212-shop-filters"><button data-expense-filter="all" class="'+(expenseMemberFilter==='all'?'active':'')+'">전체 결제</button>'+expenseMembers.filter(m=>m.role!=='removed').map(m=>'<button data-expense-filter="'+esc(m.uid)+'" class="'+(expenseMemberFilter===m.uid?'active':'')+'">'+esc(m.name||'여행자')+'</button>').join('')+(arr.some(x=>!x.payerUid)?'<button data-expense-filter="legacy" class="'+(expenseMemberFilter==='legacy'?'active':'')+'">직접 입력 기록</button>':'')+'</div>':'')+
+  (collabId&&expenseMembers.length?'<div class="v212-shop-filters"><button data-expense-filter="all" class="'+(expenseMemberFilter==='all'?'active':'')+'">전체 결제</button>'+expenseMembers.filter(m=>m.role!=='removed').map(m=>'<button data-expense-filter="'+esc(m.uid)+'" class="'+(expenseMemberFilter===m.uid?'active':'')+'">'+esc(m.name||'여행자')+'</button>').join('')+'</div>':'')+
   (filtered.length?'<div class="responsiveTable v2-records"><table><thead><tr><th>항목</th><th>결제자</th><th>결제 금액</th><th>상태</th><th>관리</th></tr></thead><tbody>'+
    filtered.map(x=>'<tr><td data-label="항목">'+(x.expenseDate?'<small class="v212-expensedate">'+esc(x.expenseDate)+'</small>':'')+esc(x.name)+(x.category?'<small class="v212-expensedate">'+esc(x.category)+'</small>':'')+'</td><td data-label="결제자">'+esc(payerName(x))+'</td><td data-label="금액" class="amount">'+esc(expenseText(x))+'</td><td data-label="상태"><button type="button" data-toggle-item="expense:'+esc(x.id)+'">'+(x.paid?'✅ 완료':'○ 예정')+'</button></td><td data-label="관리"><button data-edit-item="expense:'+esc(x.id)+'">수정</button> <button data-delete-item="expense:'+esc(x.id)+'">삭제</button></td></tr>').join('')+
    '</tbody></table></div>':'<div class="emptyMini">🪙 첫 번째 경비를 추가해 보세요!</div>');
@@ -1095,7 +1094,7 @@ app.innerHTML=`<section class="v2-detail">
   <div class="v2-topline"><button class="back" data-nav="dashboard">← 내 여행</button>${collabId?(sharedSaveFailed?'<span class="v2-sync" role="status">⚠️ 저장 오류</span>':sharedDirty||sharedBusy?'<span class="v2-sync" role="status">저장 중…</span>':'<span class="v2-sync" role="status">👥 함께 편집</span>'):''}</div>
   <header class="v2-hero"><div class="v2-hero-info"><span class="eyebrow">${collabId?'🤝 함께하는 여행':'✿ 나의 여행'} · ${esc(t.destination)}</span><h1>${esc(t.title)}</h1><p>📅 ${duration(t)} · 👥 ${Number(t.people)||1}명</p></div>${safeCoverPhoto(t.coverPhoto)?`<img class="v210-hero-cover" src="${safeCoverPhoto(t.coverPhoto)}" alt="여행 커버 사진">`:`<span class="v2-symbol" aria-hidden="true">${theme(t)[2]}</span>`}</header>
   <div class="v2-summarybar"><div class="v2-summarycounts"><span>📍 일정 <b>${t.stops.length}</b></span><span>✓ 방문 <b>${completed}</b></span><span>✅ 준비물 <b>${t.checklist.filter(x=>x.done).length}/${t.checklist.length}</b></span></div>
-    <div class="v2-quickactions">${collabId?'<button class="secondary mini" data-collab-members>👥 여행자 관리</button>':''}<button class="secondary mini v2-invite" data-add-traveler>👥 여행자 추가</button><details class="v2-manage"><summary>⋯ 관리</summary><div class="v2-manage-list">
+    <div class="v2-quickactions"><button class="secondary mini v2-invite" data-add-traveler>👥 여행자 추가</button><details class="v2-manage"><summary>⋯ 관리</summary><div class="v2-manage-list">
       ${collabId?'<button class="secondary mini" data-collab-members>👥 여행자 관리</button><button class="secondary mini" data-refresh-shared>↻ 공동 여행 최신 정보 확인</button>':''}
       <button class="secondary mini" data-edit>✏️ 여행 정보 수정</button><button class="secondary mini" data-share-trip>🔗 여행 공유</button>
       <button class="secondary mini" data-toggle>${t.status==='done'?'↩ 계획 중으로 변경':'✓ 다녀온 여행으로 변경'}</button>
@@ -1521,6 +1520,7 @@ async function addTraveler(){
     const original=selected(detailId);if(!original)return;
     const existingId=original.collabId||collabList.find(c=>c.sourceTripId===original.id)?.id;
     if(existingId){await openCollab(existingId);await collabInvite();return}
+    if(!confirm('이 여행을 함께 편집할 여행자를 초대할까요? 일정·숙소·교통·경비·쇼핑·체크리스트가 공유돼요. 먼저 백업을 보관하는 걸 권장해요.'))return;
     await startCollab();
   }catch(e){toast('여행자 추가 실패: '+(e.code||e.message));accountModal()}
 }
@@ -1679,7 +1679,7 @@ async function openCollab(id){
     expenseMembersUnsub=ref.collection('members').onSnapshot(snap=>{
       if(collabId!==id)return;
       expenseMembers=snap.docs.map(doc=>({uid:doc.id,...doc.data()}));
-      if(['expense','shopping'].includes(plannerTab)&&!modalRoot.querySelector('#overlay')&&!document.activeElement?.closest('#quickExpenseForm'))render();
+      if(plannerTab==='expense'&&!modalRoot.querySelector('#overlay')&&!document.activeElement?.closest('#quickExpenseForm'))render();
     },err=>{if(collabId===id)toast('결제자 목록 불러오기 실패: '+(err.code||err.message))});
     collabMetaUnsub=ref.onSnapshot(doc=>{
       if(collabId!==id)return;
@@ -1784,76 +1784,16 @@ async function openCollabInvite(token){
     };
   }catch(e){toast('초대 확인 실패: '+(e.code||e.message))}
 }
-function safeMemberPhoto(raw){return typeof raw==='string'&&raw.length<32000&&/^data:image\\/jpeg;base64,[a-zA-Z0-9+/=]+$/.test(raw)?raw:''}
-function memberAvatar(m){
-  const name=String(m?.name||'여행자').trim(),photo=safeMemberPhoto(m?.photo);
-  return '<span class="moa-member-avatar" aria-hidden="true">'+(photo?'<img alt="" src="'+photo+'">':esc(name.slice(0,1)||'여'))+'</span>';
-}
-async function compressMemberPhoto(file){
-  if(!file||!file.type.startsWith('image/')||file.size>15*1024*1024)throw Error('15MB 이하의 사진을 선택해 주세요.');
-  const img=await new Promise((resolve,reject)=>{const url=URL.createObjectURL(file),i=new Image();i.onload=()=>{URL.revokeObjectURL(url);resolve(i)};i.onerror=()=>{URL.revokeObjectURL(url);reject(Error('사진을 열지 못했어요.'))};i.src=url});
-  for(const size of [192,144,112]){
-    const canvas=document.createElement('canvas');canvas.width=size;canvas.height=size;
-    const side=Math.min(img.naturalWidth,img.naturalHeight),sx=(img.naturalWidth-side)/2,sy=(img.naturalHeight-side)/2;
-    canvas.getContext('2d').drawImage(img,sx,sy,side,side,0,0,size,size);
-    for(const quality of [.75,.55,.4]){
-      const data=canvas.toDataURL('image/jpeg',quality);
-      if(data.length<30000)return data;
-    }
-  }
-  throw Error('사진 용량을 줄이지 못했어요. 다른 사진을 선택해 주세요.');
-}
 async function collabMembers(){
-  if(!collabId)return;
   try{
-    const currentId=collabId;
-    const snap=await setupCloud().db.collection('collabTrips').doc(currentId).collection('members').get();
-    if(collabId!==currentId)return;
-    const members=snap.docs.map(d=>({uid:d.id,...d.data()})).filter(m=>m.role!=='removed');
-    const me=members.find(m=>m.uid===cloudUser?.uid);
-    modal('<div class="modalhead"><h2>👥 여행자 관리</h2><button class="iconbtn" data-close>×</button></div>'+
-      '<p class="tinyHint">여행별로 닉네임과 프로필 사진을 설정해요. 다른 여행에는 적용되지 않아요.</p>'+
-      (me?'<section class="moa-my-profile"><strong>내 여행 프로필</strong><div class="moa-profile-preview">'+memberAvatar(me)+'<div><b>'+esc(me.name||'여행자')+'</b><small>사진과 닉네임을 직접 바꿀 수 있어요</small></div></div>'+
-        '<button type="button" class="secondary mini" id="editMyTripProfile">✏️ 내 프로필 편집</button></section>':'')+
-      '<div class="moa-member-heading"><strong>함께하는 여행자</strong><small>'+members.length+'명</small></div>'+
-      '<div class="moa-member-list">'+members.map(m=>'<div class="moa-member-row">'+memberAvatar(m)+
-        '<div class="moa-member-info"><strong>'+esc(m.name||'여행자')+'</strong><small>'+(m.role==='owner'?'여행장':m.role==='editor'?'편집자':'보기 전용')+(m.uid===cloudUser?.uid?' · 나':'')+'</small></div>'+
-        (collabRole==='owner'&&m.uid!==cloudUser?.uid?'<div class="actionrow"><button class="secondary mini" data-member-role="'+esc(m.uid)+'" data-role="'+(m.role==='editor'?'viewer':'editor')+'">'+(m.role==='editor'?'보기 전용':'편집 허용')+'</button><button class="secondary mini" data-member-remove="'+esc(m.uid)+'">내보내기</button></div>':'')+
-        '</div>').join('')+'</div>');
-    const edit=modalRoot.querySelector('#editMyTripProfile');if(edit)edit.onclick=()=>editTripProfile(me);
+    const ref=setupCloud().db.collection('collabTrips').doc(collabId),snap=await ref.collection('members').get(),members=snap.docs.map(d=>({uid:d.id,...d.data()}));
+    modal('<div class="modalhead"><h2>👥 공동 여행 동행자</h2><button class="iconbtn" data-close>×</button></div>'+
+      members.map(m=>'<div class="note" style="margin:9px 0"><b>'+esc(m.name||m.uid)+'</b> · '+(m.role==='owner'?'여행장':m.role==='editor'?'편집자':'보기 전용')+
+      (collabRole==='owner'&&m.uid!==cloudUser.uid?'<div class="actionrow"><button class="secondary mini" data-member-role="'+esc(m.uid)+'" data-role="'+(m.role==='editor'?'viewer':'editor')+'">'+(m.role==='editor'?'보기 전용으로 변경':'편집 허용')+'</button><button class="secondary mini" data-member-remove="'+esc(m.uid)+'">내보내기</button></div>':'')+
+      '</div>').join(''));
     modalRoot.querySelectorAll('[data-member-role]').forEach(b=>b.onclick=()=>changeCollabRole(b.dataset.memberRole,b.dataset.role));
     modalRoot.querySelectorAll('[data-member-remove]').forEach(b=>b.onclick=()=>removeCollabMember(b.dataset.memberRemove));
   }catch(e){toast('동행자 확인 실패: '+(e.code||e.message))}
-}
-function editTripProfile(member){
-  if(!collabId||member?.uid!==cloudUser?.uid)return;
-  const tripId=collabId;let photo=safeMemberPhoto(member.photo),busy=false;
-  modal('<form id="moaProfileForm"><div class="modalhead"><h2>🌷 내 여행 프로필</h2><button class="iconbtn" type="button" data-close>×</button></div>'+
-    '<div class="moa-profile-photo" id="moaPhotoPreview">'+memberAvatar(member)+'</div>'+
-    '<div class="moa-photo-actions"><label class="secondary mini">🖼️ 사진 선택<input id="moaPhotoFile" type="file" accept="image/*" hidden></label><button type="button" class="secondary mini" id="moaPhotoRemove">기본 이미지로</button></div>'+
-    '<p class="tinyHint">사진은 정사각형으로 잘라 작은 크기로 저장돼요. 여행 참여자에게 표시됩니다.</p>'+
-    '<div class="field"><label>이 여행에서 사용할 닉네임<input name="nickname" maxlength="20" required value="'+esc(member.name||'')+'" placeholder="예: 냥이"></label></div>'+
-    '<div class="modalactions"><button type="button" class="secondary" id="moaProfileCancel">취소</button><button type="submit" class="primary" id="moaProfileSave">변경 저장</button></div></form>');
-  const preview=()=>{const el=modalRoot.querySelector('#moaPhotoPreview');if(el)el.innerHTML=memberAvatar({name:modalRoot.querySelector('[name="nickname"]')?.value||member.name,photo})};
-  modalRoot.querySelector('#moaPhotoFile').onchange=async e=>{
-    if(!e.target.files?.[0])return;
-    busy=true;try{photo=await compressMemberPhoto(e.target.files[0]);preview()}catch(err){toast(err.message)}finally{busy=false}
-  };
-  modalRoot.querySelector('#moaPhotoRemove').onclick=()=>{photo='';preview()};
-  modalRoot.querySelector('[name="nickname"]').oninput=preview;
-  modalRoot.querySelector('#moaProfileCancel').onclick=()=>collabMembers();
-  modalRoot.querySelector('#moaProfileForm').onsubmit=async e=>{
-    e.preventDefault();if(busy){toast('사진 처리가 끝난 뒤 저장해 주세요.');return}
-    if(collabId!==tripId)return;
-    const name=String(new FormData(e.target).get('nickname')||'').trim();
-    if(!name||name.length>20){toast('닉네임은 1~20자로 입력해 주세요.');return}
-    const saveButton=modalRoot.querySelector('#moaProfileSave');saveButton.disabled=true;
-    try{
-      await setupCloud().db.collection('collabTrips').doc(tripId).collection('members').doc(member.uid).update({name,photo});
-      toast('여행 프로필을 저장했어요. 🌷');
-      await collabMembers();
-    }catch(err){toast('프로필 저장 실패: '+(err.code||err.message));saveButton.disabled=false}
-  };
 }
 async function changeCollabRole(uid,role){
   try{await setupCloud().db.collection('collabTrips').doc(collabId).collection('members').doc(uid).update({role});collabMembers();toast('동행자 권한을 변경했어요.')}
