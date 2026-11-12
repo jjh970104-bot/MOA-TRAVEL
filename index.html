@@ -402,7 +402,7 @@
 <div id="modalRoot"></div><div id="toastRoot"></div>
 <script>
 (function(){'use strict';
-const STORAGE_KEY='moa-v1-trips-independent-2026';const app=document.getElementById('app');const modalRoot=document.getElementById('modalRoot');let guestPreviewToken=null,guestPreviewData=null;let page='home',filter='all',detailId=null,detailDay=0,plannerTab='schedule',plannerMode='plan';let trips=[];let adminAuthorized=false,adminCheckToken=0,adminMetrics=null,adminMetricsUnavailable=false;let pendingShareId=null,pendingCollabToken=null,collabId=null,collabMeta=null,collabStops=[],collabStopUnsub=null,collabMetaUnsub=null,collabMemberUnsub=null,collabRole=null,collabList=[],collabListUnsub=null,sharedTrip=null,sharedBase=null,sharedStateUnsub=null,sharedDirty=false,sharedBusy=false,sharedTimer=null,sharedEditVersion=0,sharedStateRef=null,sharedSaveFailed=false,sharedDeferredRemote=null,sharedRefreshNeeded=false,expenseMembers=[],expenseMembersUnsub=null;let routeMap=null,placeSearchTimer=null,placeSearchResults=[],placeSelected=null,cloudUser=null,cloudActive=false,cloudListener=null,cloudRef=null,cloudTimer=null,cloudPending=false,cloudBusy=false,cloudApplying=false,cloudAuthReady=false,personalReady=false,personalBootToken=0,personalBooting=false;const MAP_KEY='moa-geoapify-api-key-v1';
+const STORAGE_KEY='moa-v1-trips-independent-2026';const app=document.getElementById('app');const modalRoot=document.getElementById('modalRoot');let guestPreviewToken=null,guestPreviewData=null;let page='home',filter='all',detailId=null,detailDay=0,plannerTab='schedule',plannerMode='plan';let trips=[];let adminAuthorized=false,adminCheckToken=0,adminMetrics=null,adminMetricsUnavailable=false;let pendingShareId=null,pendingCollabToken=null,collabId=null,collabMeta=null,collabStops=[],collabStopUnsub=null,collabMetaUnsub=null,collabMemberUnsub=null,collabRole=null,collabList=[],collabListUnsub=null,sharedTrip=null,sharedBase=null,sharedStateUnsub=null,sharedDirty=false,sharedBusy=false,sharedTimer=null,sharedEditVersion=0,sharedStateRef=null,sharedSaveFailed=false,sharedDeferredRemote=null,sharedRefreshNeeded=false,expenseMembers=[],expenseMembersUnsub=null;let routeMap=null,placeSearchTimer=null,placeSearchResults=[],placeSelected=null,cloudUser=null,cloudActive=false,cloudListener=null,cloudRef=null,cloudTimer=null,cloudPending=false,cloudBusy=false,cloudApplying=false,cloudAuthReady=false,personalReady=false,personalBootToken=0,personalBooting=false,cloudRetryDelay=1000;const MAP_KEY='moa-geoapify-api-key-v1';
 let legacyPersonalTrips=[];try{const saved=JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]');legacyPersonalTrips=Array.isArray(saved)?saved.filter(t=>t&&typeof t.id==='string'):[]}catch(e){console.warn('이전 여행 백업 읽기 실패',e);}const personalKey=uid=>'moa-personal-uid-'+uid+'-v210';
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function save(){
@@ -413,7 +413,7 @@ function save(){
     sharedDirty=true;sharedSaveFailed=false;sharedEditVersion++;scheduleSharedSave();return true;
   }
   if(!personalReady){toast('계정 여행을 준비하는 중이에요. 연결 상태를 확인해 주세요.');return false}
-  try{const serialized=JSON.stringify(trips);if(new Blob([serialized]).size>900000){toast('여행 데이터가 저장 용량에 가까워요. 커버사진을 줄이거나 JSON 백업 후 정리해 주세요.');return false}localStorage.setItem(personalKey(cloudUser.uid),serialized);if(cloudActive&&!cloudApplying)queueCloudSave();return true}
+  try{const serialized=JSON.stringify(trips);if(new Blob([serialized]).size>900000){toast('여행 데이터가 저장 용량에 가까워요. 커버사진을 줄이거나 JSON 백업 후 정리해 주세요.');return false}localStorage.setItem(personalKey(cloudUser.uid),serialized);if(cloudActive&&!cloudApplying)queueCloudSave();else if(!cloudActive&&!cloudApplying)toast('⚠️ 서버 연결이 중단돼 현재 기기에만 저장됐어요. 연결 상태를 확인해 주세요.');return true}
   catch(e){toast('저장에 실패했어요. 저장 공간을 확인해 주세요.');return false}
 }
 function toast(msg){const r=document.getElementById('toastRoot');r.innerHTML='<div class="toast">'+esc(msg)+'</div>';clearTimeout(toast.timer);toast.timer=setTimeout(()=>r.innerHTML='',3000)}
@@ -1207,10 +1207,29 @@ async function cloudLogout(){
     adminCheckToken++;adminAuthorized=false;adminMetrics=null;cloudUser=null;detailId=null;page='dashboard';render();accountModal();toast('로그아웃했어요. 개인 여행은 내 계정에 보관돼요.');
   }catch(e){toast(authError(e))}
 }
-function disconnectCloud(){cloudActive=false;cloudPending=false;clearTimeout(cloudTimer);if(cloudListener){cloudListener();cloudListener=null}cloudRef=null}
+function disconnectCloud(){cloudActive=false;cloudPending=false;cloudRetryDelay=1000;clearTimeout(cloudTimer);if(cloudListener){cloudListener();cloudListener=null}cloudRef=null}
 function queueCloudSave(){if(!cloudActive||!cloudRef)return;cloudPending=true;clearTimeout(cloudTimer);cloudTimer=setTimeout(flushCloud,1000)}
-async function flushCloud(){if(!cloudRef||!cloudActive||cloudBusy||!cloudPending)return;cloudBusy=true;cloudPending=false;const payload=JSON.stringify(trips);try{await cloudRef.set({trips:JSON.parse(payload),updatedAt:firebase.firestore.FieldValue.serverTimestamp(),updatedBy:cloudUser.uid},{merge:false});toast('☁️ 클라우드 저장 완료')}catch(e){cloudPending=true;toast('⚠️ 클라우드 저장 실패: '+(e.code||e.message))}finally{cloudBusy=false;if(cloudPending&&cloudActive)queueCloudSave()}}
-
+async function flushCloud(){
+ if(!cloudRef||!cloudActive||cloudBusy||!cloudPending)return;
+ const ref=cloudRef,uid=cloudUser?.uid;
+ cloudBusy=true;cloudPending=false;
+ try{
+   const payload=JSON.stringify(trips);
+   if(new Blob([payload]).size>900000)throw Error('여행 데이터 용량이 너무 커요. 커버사진을 정리하거나 JSON 백업을 받아주세요.');
+   await ref.set({trips:JSON.parse(payload),updatedAt:firebase.firestore.FieldValue.serverTimestamp(),updatedBy:uid},{merge:false});
+   cloudRetryDelay=1000;
+ }catch(e){
+   cloudPending=true;
+   cloudRetryDelay=Math.min(60000,cloudRetryDelay*2);
+   toast('⚠️ 서버 저장 실패 · 기기 백업은 유지 중이에요. 자동으로 다시 시도해요. ('+(e.code||e.message)+')');
+ }finally{
+   cloudBusy=false;
+   if(cloudPending&&cloudActive&&cloudRef===ref&&cloudUser?.uid===uid){
+     clearTimeout(cloudTimer);
+     cloudTimer=setTimeout(flushCloud,cloudRetryDelay);
+   }
+ }
+}
 function safePersonalList(rows){return Array.isArray(rows)?rows.filter(t=>t&&typeof t.id==='string'&&typeof t.title==='string'):[]}
 function mergePersonalTrips(remote,local){
  const merged=remote.map(x=>JSON.parse(JSON.stringify(x))),byId=new Map(merged.map(x=>[x.id,x]));
