@@ -1,3 +1,10 @@
+## V2.11.2 — Shared trip clean-up (2026-11-12)
+
+- Users reported they could not delete an owner-created "동기화테스트" collaborative trip card. The original My Trips card deliberately displayed no deletion control on a linked source trip. The owner card now offers **내 여행에서 삭제**, as invited-trip cards already offer **내 목록에서 삭제**.
+- For an owner-created linked trip, a Firebase Firestore transaction removes the owner's original private trip from `users/{uid}/data/travel` and the owner's `users/{uid}/collaborations/{tripId}` index together. Only after successful server confirmation does the local UID-scoped backup and UI update. Checks block the operation during pending personal writes. For an invited-only trip, only its per-user collaboration index is deleted. No current Firestore rules change is required.
+- **This does NOT delete the canonical `collabTrips/{tripId}` or other participants' data and memberships.** This is intentionally a per-user removal/list clean-up, not a full collaborative trip deletion or revocation. If server-side deletion for everyone becomes a feature, implement an owner-only admin/backend workflow and audit the nested state, membership, invitations, and the other users' indexes.
+- Validated inline JavaScript syntax, card action visibility for owner and invitee, and a mocked Firestore transaction that removes the owner linked original while preserving another personal trip.
+
 ## MOA V2.11.1 — Remove disruptive legacy-cache recovery prompts (2026-11-12)
 
 - **Signed-in travel is automatically retrieved from Firebase** (`users/{uid}/data/travel`). The user does not have to choose browser-versus-cloud storage, and the former `confirm(...기기 내용 복구...)` and `confirm(...과거 방식...)` prompts are removed from the sign-in bootstrap path.
