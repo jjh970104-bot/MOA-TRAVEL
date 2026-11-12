@@ -494,6 +494,49 @@
 .moa-mode-travel{background:#f8faf5;border-color:#dce8dc}
 @media(max-width:700px){.moa-travel-map{padding:10px}.moa-mode-plan .routeMapCanvas{height:255px;min-height:255px}.moa-mode-travel .routeMapCanvas{height:230px;min-height:230px}.moa-map-chips{flex-wrap:nowrap;overflow-x:auto}.moa-map-chip{max-width:178px}.moa-map-missing{line-height:1.6}}
 
+
+/* MOA V2.13: compact workspace and distinguish candidate versus transit */
+.v2-detail .v2-hero{padding:12px 17px;border-radius:14px;gap:9px}
+.v2-detail .v2-hero h1{font-size:clamp(19px,2.4vw,25px);margin:3px 0}
+.v2-detail .v2-symbol{font-size:27px}
+.v2-detail .v210-hero-cover{max-height:74px;max-width:100px;object-fit:cover;border-radius:10px}
+.v2-detail .v2-summarybar{padding:7px 0;gap:7px}
+.v2-detail .v2-navarea{margin:9px 0 8px;gap:7px}
+.v2-detail .v2-main{padding:14px 17px}
+.v2-detail .v2-main .secthead{margin-bottom:7px}
+.v2-detail .v2-main .secthead h2{font-size:17px}
+.v2-detail .v28-current-day{padding:9px 12px;margin:3px 0 9px;border-radius:12px}
+.v2-detail .v28-current-day h3{font-size:16px;margin-top:2px}
+.v2-detail .v28-day-strip .v28-daytab{min-height:54px;padding:8px 11px}
+.v2-detail .moa-travel-map{margin:8px 0 10px;padding:10px;border-radius:14px}
+.v2-detail .moa-travel-map .moa-travel-map-head{margin-bottom:8px}
+.v2-detail .moa-travel-map .moa-travel-map-head strong{font-size:15px}
+.v2-detail .moa-travel-map .moa-map-note{font-size:10px;margin-top:2px}
+.v2-detail .v28-transfer{background:#eaf4fc!important;border:1px solid #bcd9ef!important;color:#39729a!important}
+.v2-detail .v28-transfer button{color:#39729a!important}
+.v2-detail .v28-itinerary-card.v28-candidate{background:#fff8e9!important;border:1px dashed #e6c680!important}
+.v2-detail .v28-card-number.candidate{background:#ffe6ad!important;color:#94601b!important}
+.v2-detail .v28-itinerary-card.v28-candidate .v28-card-meta span{background:#fff0cb}
+.moa-auto-place-hints{border:1px solid #d9e7db;border-radius:12px;background:#fff;margin:7px 0;max-height:270px;overflow:auto;box-shadow:0 9px 20px #0000000c}
+.moa-auto-place-title{font-size:11px;font-weight:700;color:#61806a;padding:8px 10px;background:#f3f9f2}
+.moa-auto-place-hints button{display:grid;gap:3px;width:100%;text-align:left;background:#fff;border:0;border-top:1px solid #edf1ec;padding:9px 11px;font-size:12px}
+.moa-auto-place-hints button:hover{background:#eff7f0}
+.moa-auto-place-hints small{color:#87958a;font-size:10px;overflow-wrap:anywhere}
+.moa-auto-place-hints[hidden]{display:none!important}
+@media(max-width:700px){
+ .v2-detail .v2-hero{padding:10px 12px;border-radius:12px}
+ .v2-detail .v2-hero h1{font-size:19px}
+ .v2-detail .v2-hero p{font-size:11px}
+ .v2-detail .v2-summarybar{padding:6px 0}
+ .v2-detail .v2-navarea{margin:7px 0}
+ .v2-detail .v2-main{padding:10px 10px}
+ .v2-detail .v28-current-day{padding:8px 10px}
+ .v2-detail .v28-current-day h3{font-size:15px}
+ .v2-detail .v28-day-strip .v28-daytab{min-width:113px;max-width:138px;min-height:52px;padding:7px 9px}
+ .v2-detail .moa-travel-map{padding:8px}
+ .v2-detail .moa-travel-map .routeMapCanvas{height:225px;min-height:225px}
+}
+
 </style>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/><script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script><script defer src="https://www.gstatic.com/firebasejs/13.2.0/firebase-app-compat.js"></script><script defer src="https://www.gstatic.com/firebasejs/13.2.0/firebase-auth-compat.js"></script><script defer src="https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore-compat.js"></script><script defer src="firebase-config.js"></script></head>
 <body>
@@ -1006,7 +1049,7 @@ function travelDayMap(t){
     (!locationAvailable(x)&&editable?'<button type="button" class="moa-route-locate" data-map-locate="'+esc(itemOrderKey(x))+'" aria-label="'+esc(x.name)+' 지도 위치 연결">위치 연결</button>':'')+
     '</div>').join('');
   return '<section class="moa-travel-map moa-mode-'+(isTravel?'travel':'plan')+'" id="travelMapSection" aria-label="날짜별 일정 지도">'+
-    '<div class="moa-travel-map-head"><div><span class="eyebrow">OUR ROUTE</span><strong>🗺️ '+(isTravel?'오늘의 지도':'오늘의 동선')+'</strong>'+
+    '<div class="moa-travel-map-head"><div><strong>🗺️ 일정 지도</strong>'+
     '<small>'+esc(dayDateLabel(t,detailDay))+' · 위치 '+located.length+'/'+entries.length+'곳 연결</small></div>'+
     '<button type="button" class="secondary mini" data-route-map '+(entries.length<2?'disabled':'')+'>↗ 길찾기</button></div>'+
     '<div class="v2-map-wrap"><div id="travelDayMapCanvas" class="routeMapCanvas" aria-label="방문 장소 지도"></div></div>'+
@@ -1264,7 +1307,7 @@ function shoppingView(t){
 }
 function checklistView(t){const done=t.checklist.filter(x=>x.done).length;return `<div class="secthead"><h2>✅ 여행 준비 체크</h2><button class="secondary mini" data-add-item="checklist">＋ 준비물 추가</button></div><div class="miniStat">🌱 ${done}/${t.checklist.length}개 준비 완료</div>${t.checklist.length?t.checklist.map(x=>`<div class="listrow"><input class="list-check" type="checkbox" data-toggle-item="checklist:${esc(x.id)}" ${x.done?'checked':''} aria-label="${esc(x.name)} 완료"><label class="${x.done?'doneText':''}">${esc(x.name)}</label><button class="textbtn" data-edit-item="checklist:${esc(x.id)}">수정</button><button class="dots" data-delete-item="checklist:${esc(x.id)}">×</button></div>`).join(''):'<div class="emptyMini">🎒 여권·충전기·예약 확인 등 준비할 일을 모아봐요!</div>'}`}
 function detail(){const t=selected(detailId);if(!t){page='dashboard';dashboard();return}ensureTrip(t);const n=days(t);detailDay=Math.max(0,Math.min(detailDay,n-1));const date=new Date(parseDate(t.start));date.setDate(date.getDate()+detailDay);const dateStr=`${date.getMonth()+1}/${date.getDate()}`;let main='';
-if(plannerTab==='schedule')main=`<div class="secthead"><h2>${plannerMode==='plan'?'🗓️ 날짜별 일정':'🎒 오늘의 여행'}</h2>${plannerMode==='plan'?'<button class="secondary mini" data-add-stop>＋ 장소 추가</button>':''}</div><div class="dayline v28-day-strip">${Array.from({length:n},(_,i)=>`<button class="daytab v28-daytab ${i===detailDay?'active':''}" data-day="${i}"><b>${dayDateLabel(t,i)}</b><small>${esc(dayTheme(t,i)||"DAY "+(i+1))}</small></button>`).join('')}</div><div class="v28-current-day"><div><span>DAY ${detailDay+1} · ${dayDateLabel(t,detailDay)}</span><h3>${esc(dayTheme(t,detailDay)||'오늘은 어디로 떠날까요?')}</h3></div>${plannerMode==='plan'?'<button class="secondary mini" data-edit-day-theme>✎ 오늘의 테마</button>':''}</div>${plannerMode==='travel'?travelCompactHeader(t):'<p class="tinyHint">방문 순서와 장소 간 이동수단을 기록할 수 있어요. 대체 장소는 번호 대신 후보로 표시돼요.</p>'+dailyHighlights(t)}${travelDayMap(t)}<div id="travelScheduleSection" class="${plannerMode==='travel'?'moa-travel-schedule':''}" style="margin-top:12px">${itineraryRows(t)}</div>${plannerMode==='travel'?travelQuickExpense(t):''}`;
+if(plannerTab==='schedule')main=`<div class="secthead"><h2>${plannerMode==='plan'?'🗓️ 날짜별 일정':'🎒 오늘의 여행'}</h2>${plannerMode==='plan'?'<button class="secondary mini" data-add-stop>＋ 장소 추가</button>':''}</div><div class="dayline v28-day-strip">${Array.from({length:n},(_,i)=>`<button class="daytab v28-daytab ${i===detailDay?'active':''}" data-day="${i}"><b>${dayDateLabel(t,i)}</b><small>${esc(dayTheme(t,i)||"DAY "+(i+1))}</small></button>`).join('')}</div><div class="v28-current-day"><div><span>DAY ${detailDay+1} · ${dayDateLabel(t,detailDay)}</span><h3>${esc(dayTheme(t,detailDay)||'오늘은 어디로 떠날까요?')}</h3></div>${plannerMode==='plan'?'<button class="secondary mini" data-edit-day-theme>✎ 테마</button>':''}</div>${plannerMode==='travel'?travelCompactHeader(t):'<p class="tinyHint">방문 순서와 장소 간 이동수단을 기록할 수 있어요. 대체 장소는 번호 대신 후보로 표시돼요.</p>'}${travelDayMap(t)}<div id="travelScheduleSection" class="${plannerMode==='travel'?'moa-travel-schedule':''}" style="margin-top:12px">${itineraryRows(t)}</div>${plannerMode==='travel'?travelQuickExpense(t):''}`;
 if(plannerTab==='stays')main=staysView(t);if(plannerTab==='transport')main=transportView(t);if(plannerTab==='expense')main=expenseView(t);if(plannerTab==='shopping')main=shoppingView(t);if(plannerTab==='checklist')main=checklistView(t);if(plannerTab==='phrases')main=phraseGuideView(t);
 const completed=t.stops.filter(x=>x.done).length;
 app.innerHTML=`<section class="v2-detail">
@@ -1362,7 +1405,7 @@ function formStop(editId){
  const options=(values,selected)=>values.map(v=>'<option value="'+esc(v)+'" '+(v===selected?'selected':'')+'>'+esc(v)+'</option>').join('');
  modal('<form id="stopForm"><div class="modalhead"><h2>'+(x?'✏️ 일정 수정':'📍 장소 추가')+'</h2><button type="button" class="iconbtn" data-close aria-label="닫기">×</button></div>'+
  '<p class="muted tiny">'+esc(dayDateLabel(t,detailDay))+' · 장소·후보·비용을 한곳에서 기록해요.</p>'+
- '<div class="field"><label>장소 또는 일정 이름 *</label><input name="place" maxlength="90" required value="'+esc(x?.name||'')+'" placeholder="예: 상하이 디즈니랜드"></div>'+
+ '<div class="field"><label>장소 또는 일정 이름 *</label><input name="place" maxlength="90" required autocomplete="off" value="'+esc(x?.name||'')+'" placeholder="예: 상하이 디즈니랜드"><div id="moaAutoPlaceHints" class="moa-auto-place-hints" role="listbox" hidden></div><small class="tinyHint">장소를 입력하면 지도 위치를 추천해요. 정확한 장소를 선택해야 지도에 저장돼요.</small></div>'+
  '<div class="formrow"><div class="field"><label>시간</label><input type="time" name="time" value="'+esc(x?.time||'')+'"></div><div class="field"><label>구분</label><select name="type">'+options(['관광','식사','카페','쇼핑','숙소','항공','이동','기타'],x?.type||'관광')+'</select></div></div>'+
  '<div class="formrow"><div class="field"><label>일정 상태</label><select name="status" id="stopStatus">'+options(['계획','확정','후보'],status)+'</select></div><div class="field" id="alternateForWrap" '+(status==='후보'?'':'hidden')+'><label>어떤 일정의 후보인가요?</label><select name="alternativeFor">'+candidateParentOptions(t,x)+'</select><small class="tinyHint">선택한 일정 아래 대체 후보로 표시돼요.</small></div></div>'+
  '<div class="formrow"><div class="field"><label>이 장소까지 이동수단</label><select name="transport">'+options(['','도보','지하철','버스','택시 / 디디','택시','기차','렌터카','기타'],x?.transport||x?.leg?.mode||'')+'</select></div><div class="field"><label>소요시간 (분)</label><input type="number" name="legMinutes" min="0" max="1440" step="1" placeholder="예: 20" value="'+esc(x?.leg?.minutes??'')+'"></div></div>'+
@@ -1373,6 +1416,65 @@ function formStop(editId){
  '<details class="v25-geo-beta"><summary>📍 지도 위치 연결 (시험 기능) <span>⌄</span></summary><div class="field"><label for="geoSearch">장소 검색</label><div class="compactrow v24-search-row"><input id="geoSearch" type="search" autocomplete="off" enterkeyhint="search" value="'+esc(x?.name||'')+'"><button id="geoSearchButton" class="secondary mini" type="button">검색</button></div><div id="geoSearchResults" class="searchResults" role="listbox" hidden></div><div id="chosenGeo" class="apiHelp">'+(placeSelected?'기존 좌표가 연결돼 있어요.':'좌표 미선택')+'</div><button type="button" class="textbtn" id="geoSettings">검색 설정</button></div></details>'+
  '<div class="field"><label>메모</label><textarea name="note" maxlength="500" placeholder="웨이팅·예약·주의사항">'+esc(x?.note||'')+'</textarea></div>'+
  '<div class="modalactions"><button type="button" class="secondary" data-close>취소</button><button type="submit" class="primary">'+(x?'수정 완료':'장소 추가')+'</button></div></form>');
+ const nameField=document.querySelector('#stopForm [name="place"]');
+ const hints=document.getElementById('moaAutoPlaceHints');
+ let suggestionTimer=null,suggestionSeq=0,lastSuggestionAt=0;
+ if(nameField&&hints){
+   const hideSuggestions=()=>{hints.hidden=true;hints.innerHTML=''};
+   nameField.addEventListener('input',()=>{
+     clearTimeout(suggestionTimer);suggestionSeq++;
+     hideSuggestions();
+     // Do not overwrite coordinates before the visitor confirms a result.
+     const value=nameField.value.trim();
+     if(value.length<3)return;
+     const sequence=suggestionSeq;
+     suggestionTimer=setTimeout(async()=>{
+       if(!document.getElementById('stopForm')||sequence!==suggestionSeq)return;
+       const now=Date.now();if(now-lastSuggestionAt<1800)return;
+       lastSuggestionAt=now;
+       const destination=String(t.destination||'').trim();
+       const q=destination&&!value.toLowerCase().includes(destination.toLowerCase())?value+' '+destination:value;
+       try{
+         const apiKey=localStorage.getItem(MAP_KEY)||'';
+         let matches=[];
+         if(apiKey){
+           const url='https://api.geoapify.com/v1/geocode/autocomplete?text='+encodeURIComponent(q)+'&format=json&limit=5&lang=ko&apiKey='+encodeURIComponent(apiKey);
+           const response=await fetch(url);
+           if(!response.ok)throw Error('추천 검색 실패');
+           const data=await response.json();
+           matches=(data.results||[]).map(a=>({lat:Number(a.lat),lon:Number(a.lon),name:a.name||a.formatted||'',address:a.formatted||''}));
+         }else{
+           const url='https://photon.komoot.io/api/?q='+encodeURIComponent(q)+'&limit=5&lang=en';
+           const response=await fetch(url,{headers:{Accept:'application/json'}});
+           if(!response.ok)throw Error('추천 검색 실패');
+           const data=await response.json();
+           matches=(data.features||[]).map(a=>{
+             const p=a.properties||{},c=a.geometry?.coordinates||[];
+             const address=[p.name,p.street,p.city,p.state,p.country].filter(Boolean).join(', ');
+             return {lat:Number(c[1]),lon:Number(c[0]),name:p.name||p.city||'',address};
+           });
+         }
+         if(!document.getElementById('stopForm')||sequence!==suggestionSeq||nameField.value.trim()!==value)return;
+         const valid=matches.filter(a=>Number.isFinite(a.lat)&&Number.isFinite(a.lon)&&a.address).slice(0,5);
+         if(!valid.length)return;
+         hints.innerHTML='<div class="moa-auto-place-title">📍 지도 위치 추천 · 정확한 장소를 선택해 주세요</div>'+
+           valid.map((a,i)=>'<button type="button" data-auto-place="'+i+'"><b>'+esc(a.name||a.address.split(',')[0])+'</b><small>'+esc(a.address)+'</small></button>').join('');
+         hints.hidden=false;
+         hints.querySelectorAll('[data-auto-place]').forEach(button=>button.onclick=()=>{
+           const a=valid[Number(button.dataset.autoPlace)];if(!a)return;
+           placeSelected={lat:a.lat,lon:a.lon,formatted:a.address,name:a.name};
+           const form=document.getElementById('stopForm');if(!form)return;
+           form.elements.address.value=a.address;
+           const chosen=document.getElementById('chosenGeo');
+           if(chosen)chosen.textContent='✅ 지도 위치 연결 완료 · '+a.address;
+           hideSuggestions();
+           toast('📍 지도 위치를 선택했어요. 일정 저장 시 반영돼요.');
+         });
+       }catch(err){console.info('자동 지도 추천을 사용할 수 없어요. 수동 지도 검색을 이용해 주세요.',err)}
+     },900);
+   });
+ }
+
  document.getElementById('stopStatus')?.addEventListener('change',e=>{document.getElementById('alternateForWrap').hidden=e.target.value!=='후보'});
  document.getElementById('geoSearchButton')?.addEventListener('click',searchPlaces);
  document.getElementById('geoSearch')?.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();searchPlaces()}});
