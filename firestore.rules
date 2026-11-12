@@ -129,10 +129,22 @@ service cloud.firestore {
               && get(/databases/$(database)/documents/collabInvites/$(request.resource.data.inviteId)).data.tripId == tripId
             )
           );
-        allow update: if tripOwner(tripId)
+        allow update: if (
+          tripOwner(tripId)
           && memberUid != request.auth.uid
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['role'])
-          && request.resource.data.role in ['editor','viewer'];
+          && request.resource.data.role in ['editor','viewer']
+        ) || (
+          moaVerified()
+          && request.auth.uid == memberUid
+          && collabMember(tripId)
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name','photo'])
+          && request.resource.data.name is string
+          && request.resource.data.name.size() >= 1
+          && request.resource.data.name.size() <= 20
+          && request.resource.data.get('photo','') is string
+          && request.resource.data.get('photo','').size() <= 24000
+        );
         allow delete: if tripOwner(tripId) && memberUid != request.auth.uid;
       }
       // One canonical shared trip state for the existing full MOA planner.
