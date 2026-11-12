@@ -1,3 +1,21 @@
+## MOA V2.10 — Ease of use & safer account storage (2026-11-12)
+
+### User-facing improvements
+- **Cover photo**: Trip create/edit allows choosing an image from the photo library or a camera capture (mobile devices supporting `capture="environment"`). The file is resized and JPEG-compressed client-side to a maximum ~45 KB data URL, stored with the trip and displayed on cards/detail. If no picture is chosen, the existing color/emoji cover theme is retained. Photo payload uses existing Firestore trip documents (no separate Storage bucket/rules); a 900 KB serialized personal-trip guard prevents writes close to the Firestore 1 MiB document limit. Very large collections still warrant moving photos to Firebase Storage later.
+- **Searchable destinations**: Korean name input offers clickable filtered city/country matches, synonyms such as 상해/상하이 are normalized, and existing country-grouped dropdown + custom destination remain. Search input also selects canonical destination for exact typed aliases.
+- **MOA 알아보기**: User-facing guide accessible from the homepage and desktop top nav (`#about`), explaining create, itinerary/expense, participant invitations, simplified travel mode, restricted read-only guest sharing, and account questions.
+- Trimmed storage jargon from the default account UI; import/upload/download are available under collapsed `데이터 관리 → 고급 복구 도구`, not as frequent operations.
+
+### Storage stability
+- Previously, trips were stored under a **shared browser-local `STORAGE_KEY`**, and the account's Firestore listener was activated only after manual download/upload. Now a verified user's **personal Firestore doc `users/{uid}/data/travel` is fetched automatically from the server on sign-in**; that doc is then subscribed to for cloud updates. Local backup is scoped per Firebase UID at `moa-personal-uid-{uid}-v210`. Signed-out state clears current in-memory personal trips. Shared-trip collaboration continues using its separate Firestore path.
+- **No silent overwrite on migration**: The old global localStorage key is retained unchanged. At first eligible sign-in, if legacy browser-only trips differ from the server and no UID-scoped local backup exists, the user is explicitly asked whether to add them. Server trips are preserved; any same-ID, different-content trip is kept as a separate `(기기 보관본)` copy with a fresh ID. If declined, old browser data is retained on the device. Similar confirmed merge applies to divergent UID-scoped backup and server data. The decision is stored per UID so users aren't repeatedly prompted for legacy import.
+- When the initial server fetch fails, editing of private trips is blocked rather than overwriting remote data from an empty state. Local copies remain. During subsequent cloud write failures the UID-scoped local backup survives; writes retry with bounded exponential backoff and show a failure message. Cross-device concurrent edits can still conflict: the existing listener stops auto-sync and warns instead of silently choosing a version. This is **not** a full CRDT/transactional per-trip merge.
+- Existing cloud/manual recovery routines remain advanced options, and no Firestore rules need updating. No changes to the separate Shanghai V14 planner or its Firebase project.
+- **Limitations:** Cloud photos in a single Firestore document consume its capacity and are not suitable for full-size albums. Browser image processing and native speech/camera controls vary by platform. First legacy-data recovery and two-device synchronization must still be verified with a real signed-in user.
+
+### Checks performed
+JavaScript parsed for all embedded scripts, simple cover/destination/about UI presence checked, mock authenticated cloud-bootstrap tests passed in 4 conditions (existing remote, opt-in legacy merge, opt-out, fresh account), and merge conflict copies are preserved. **No live Firebase end-to-end or mobile Safari upload test was performed**.
+
 ## MOA V2.9 — Integrated itinerary cards & editor (2026-11-12)
 
 - Planning mode shows stop category, status, memo, address and linked expense inline rather than hiding them under a details disclosure. Travel mode remains compact.
