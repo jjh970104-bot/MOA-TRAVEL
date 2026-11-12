@@ -430,6 +430,8 @@
 .v212-shopping-item input{width:19px;height:19px;flex:none}.v212-shopping-item small{display:block;color:#899a8d;font-size:11px;margin-top:7px;overflow-wrap:anywhere}
 .v212-shopping-item>div:nth-child(2){display:flex;gap:5px}
 @media(max-width:430px){.v212-shopping-item{flex-wrap:wrap}.v212-shopping-item>div:nth-child(2){margin-left:auto}}
+
+@media(max-width:600px){.v212-quick-spend input,.v212-quick-spend select{font-size:16px!important}}
 </style>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/><script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script><script defer src="https://www.gstatic.com/firebasejs/13.2.0/firebase-app-compat.js"></script><script defer src="https://www.gstatic.com/firebasejs/13.2.0/firebase-auth-compat.js"></script><script defer src="https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore-compat.js"></script><script defer src="firebase-config.js"></script></head>
 <body>
@@ -448,6 +450,7 @@ function save(){
   if(collabId&&detailId==='collab:'+collabId){
     if(!['owner','editor'].includes(collabRole)){toast('보기 전용 여행이라 수정할 수 없어요.');sharedTrip=sharedClone(sharedBase);render();return false}
     if(!sharedTrip||!sharedBase){toast('공동 여행 연결을 확인해 주세요.');return false}
+    try{validateShoppingChange(sharedBase,sharedDiff(sharedBase,sharedTrip),cloudUser.uid)}catch(err){toast(err.message);sharedTrip=sharedClone(sharedBase);render();return false}
     sharedDirty=true;sharedSaveFailed=false;sharedEditVersion++;scheduleSharedSave();return true;
   }
   if(!personalReady){toast('계정 여행을 준비하는 중이에요. 연결 상태를 확인해 주세요.');return false}
@@ -1552,6 +1555,21 @@ function applySharedDiff(remote,delta){
   }
   return merged;
 }
+function validateShoppingChange(remote,delta,uid){
+ const edits=delta.collections?.shopping;
+ if(!edits)return true;
+ const current=new Map((remote.shopping||[]).filter(x=>x?.id).map(x=>[x.id,x]));
+ for(const [id,change] of Object.entries(edits)){
+   const previous=current.get(id);
+   // Legacy entries without a verified UID remain read-only; they can be
+   // viewed and copied into the user's own list but not reassigned.
+   if(previous&&previous.ownerUid!==uid)throw Error('다른 여행자의 쇼핑은 수정할 수 없어요.');
+   if(change.new&&change.new.ownerUid!==uid)throw Error('새 쇼핑은 내 목록에만 추가할 수 있어요.');
+   if(change.fields&&Object.hasOwn(change.fields,'ownerUid')&&change.fields.ownerUid!==uid)
+     throw Error('쇼핑 소유자를 변경할 수 없어요.');
+ }
+ return true;
+}
 function scheduleSharedSave(){
   if(!collabId||!sharedStateRef||!sharedDirty||sharedSaveFailed)return;
   clearTimeout(sharedTimer);sharedTimer=setTimeout(flushSharedSave,420);
@@ -1567,6 +1585,7 @@ async function flushSharedSave(){
     await setupCloud().db.runTransaction(async transaction=>{
       const snap=await transaction.get(ref);
       if(!snap.exists||!snap.data()?.trip)throw Error('공동 여행 저장 문서가 없어요.');
+      validateShoppingChange(snap.data().trip,delta,cloudUser.uid);
       merged=applySharedDiff(snap.data().trip,delta);
       transaction.update(ref,{trip:merged,updatedBy:cloudUser.uid,updatedAt:firebase.firestore.FieldValue.serverTimestamp()});
     });
