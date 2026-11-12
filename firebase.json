@@ -1,0 +1,9 @@
+{
+  "functions": [
+    {
+      "source": "functions",
+      "codebase": "moa-admin",
+      "runtime": "nodejs20"
+    }
+  ]
+}
