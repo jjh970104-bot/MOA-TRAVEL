@@ -1126,6 +1126,7 @@ function moaShanghaiLocation(t){
 }
 // Curated Shanghai landmarks with stable reference coordinates. Never guess branch-specific POIs.
 const MOA_SHANGHAI_KNOWN=[
+ {re:/^(?:demores\s*hotel|데모레스\s*(?:호텔)?|黛茂诗酒店)$/i,lat:31.2191,lon:121.4853,label:'Demores Hotel, 1465 Zhonghua Road'},
  {re:/^(?:상하이\s*)?(?:푸동|浦东|pudong)\s*(?:국제)?\s*(?:공항|airport)(?:\s*(?:도착|출발))?$/i,lat:31.1427,lon:121.8148,label:'Shanghai Pudong International Airport'},
  {re:/^(?:상하이\s*)?(?:홍차오|虹桥|hongqiao)\s*(?:국제)?\s*(?:공항|airport)(?:\s*(?:도착|출발))?$/i,lat:31.19765,lon:121.33422,label:'Shanghai Hongqiao International Airport'},
  {re:/^(?:상하이\s*)?(?:디즈니랜드|디즈니\s*랜드|disneyland)(?:\s*🎠)?$/i,lat:31.14626,lon:121.65617,label:'Shanghai Disneyland'},
@@ -1149,6 +1150,7 @@ function moaShanghaiKnownPoint(entry,t){
 }
 function moaSeedShanghaiTrip(t){
  if(!moaShanghaiLocation(t)||!t)return 0;
+ if(collabId&&!['owner','editor'].includes(collabRole))return 0;
  const edits=[];
  const all=[...(t.stops||[]).map(source=>({kind:'stop',source})),...(t.stays||[]).map(source=>({kind:'stay',source}))];
  for(const entry of all){
