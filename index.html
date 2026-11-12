@@ -361,7 +361,7 @@
 <body>
 <header class="topbar"><div class="shell toprow"><button class="brand" data-nav="home"><span class="brandmark">✿</span><span class="brandtext">moa<span style="color:#8cb397">.</span></span></button><nav class="topnav"><button class="navlink active" data-nav="home">홈</button><button class="navlink" data-nav="dashboard">내 여행</button><button class="navlink" data-nav="explore">여행 탐색</button><button class="navlink" data-nav="community">커뮤니티</button></nav><div class="topactions"><button class="secondary" id="accountButton" data-account>로그인 / 회원가입</button><button class="primary" id="topCreate">＋ 여행 만들기</button></div></div></header>
 <main id="app" class="shell"></main>
-<footer class="footer"><div class="shell">© 2026 moa. · 여행의 순간을 모으다 <span style="float:right">V2.8 · 여행 일정·입력 개선</span></div></footer>
+<footer class="footer"><div class="shell">© 2026 moa. · 여행의 순간을 모으다 <span style="float:right">V2.9 · 장소·후보·비용 통합</span></div></footer>
 <nav class="mobilebar"><button data-nav="home"><span>⌂</span>홈</button><button data-nav="dashboard"><span>▦</span>내 여행</button><button data-nav="explore"><span>⌕</span>탐색</button><button data-nav="community"><span>♡</span>커뮤니티</button></nav>
 <div id="modalRoot"></div><div id="toastRoot"></div>
 <script>
@@ -874,10 +874,11 @@ function candidateParentOptions(t,stop){
  return '<option value="">연결하지 않음 (독립 후보)</option>'+t.stops.filter(x=>Number(x.day)===detailDay&&x.id!==stop?.id&&!x.candidate).map(x=>'<option value="'+esc(x.id)+'" '+(stop?.alternativeFor===x.id?'selected':'')+'>'+esc(x.name)+'</option>').join('');
 }
 function syncStopExpense(t,stop,form){
- const existing=linkedStopExpense(t,stop),raw=String(form.get('cost')||'').trim();
+ let existing=linkedStopExpense(t,stop);const raw=String(form.get('cost')||'').trim();
  if(!raw){if(existing)t.expenses=t.expenses.filter(e=>e.id!==existing.id);delete stop.expenseId;delete stop.cost;return}
  const amount=Number(raw),currency=String(form.get('currency')||localCurrency(t));
  if(!Object.hasOwn(MOA_CURRENCIES,currency)||!expenseAmountValid(amount,currency))throw Error('비용·통화를 확인해 주세요.');
+ if(!existing&&stop.cost!==undefined&&stop.cost!==''&&Number(stop.cost)===amount){existing=t.expenses.find(e=>!e.linkedStopId&&e.name===stop.name&&Number(e.amount)===amount&&expenseCurrency(e)===currency)||null}
  const fields=payerFields(form,existing||null);
  const data={name:stop.name,amount,currency,paid:String(form.get('paymentStatus'))==='paid',linkedStopId:stop.id,...fields};
  if(existing){Object.assign(existing,data);stop.expenseId=existing.id}
@@ -897,7 +898,7 @@ function formStop(editId){
  '<div class="field"><label>장소 또는 일정 이름 *</label><input name="place" maxlength="90" required value="'+esc(x?.name||'')+'" placeholder="예: 상하이 디즈니랜드"></div>'+
  '<div class="formrow"><div class="field"><label>시간</label><input type="time" name="time" value="'+esc(x?.time||'')+'"></div><div class="field"><label>구분</label><select name="type">'+options(['관광','식사','카페','쇼핑','숙소','항공','이동','기타'],x?.type||'관광')+'</select></div></div>'+
  '<div class="formrow"><div class="field"><label>일정 상태</label><select name="status" id="stopStatus">'+options(['계획','확정','후보'],status)+'</select></div><div class="field" id="alternateForWrap" '+(status==='후보'?'':'hidden')+'><label>어떤 일정의 후보인가요?</label><select name="alternativeFor">'+candidateParentOptions(t,x)+'</select><small class="tinyHint">선택한 일정 아래 대체 후보로 표시돼요.</small></div></div>'+
- '<div class="formrow"><div class="field"><label>이 장소까지 이동수단</label><select name="transport">'+options(['','도보','지하철','버스','택시 / 디디','택시','기차','렌터카','기타'],x?.transport||'')+'</select></div><div class="field"><label>소요시간 (분)</label><input type="number" name="legMinutes" min="0" max="1440" step="1" placeholder="예: 20" value="'+esc(x?.leg?.minutes??'')+'"></div></div>'+
+ '<div class="formrow"><div class="field"><label>이 장소까지 이동수단</label><select name="transport">'+options(['','도보','지하철','버스','택시 / 디디','택시','기차','렌터카','기타'],x?.transport||x?.leg?.mode||'')+'</select></div><div class="field"><label>소요시간 (분)</label><input type="number" name="legMinutes" min="0" max="1440" step="1" placeholder="예: 20" value="'+esc(x?.leg?.minutes??'')+'"></div></div>'+
  '<section class="v29-form-section"><h3>💰 이 일정의 비용</h3><p class="tinyHint">비용을 입력하면 경비 메뉴에 동일한 항목으로 한 번만 기록돼요.</p>'+
  '<div class="formrow"><div class="field"><label>금액 (선택)</label><input name="cost" type="number" min="0" max="10000000000" step="any" placeholder="예: 154000" value="'+esc(cost)+'"></div><div class="field"><label>통화</label><select name="currency">'+currencyChoices(t,currency)+'</select></div></div>'+
  '<div class="formrow"><div class="field"><label>비용 상태</label><select name="paymentStatus"><option value="unpaid" '+(expense?.paid?'':'selected')+'>예상 / 미결제</option><option value="paid" '+(expense?.paid?'selected':'')+'>결제 완료</option></select></div><div class="field"><label>결제자</label>'+payerChoiceHTML(expense)+'</div></div></section>'+
@@ -912,6 +913,7 @@ function formStop(editId){
  document.getElementById('stopForm').onsubmit=e=>{
   e.preventDefault();const f=new FormData(e.currentTarget),name=String(f.get('place')||'').trim();if(!name)return;
   const state=String(f.get('status')||'계획'),alternativeFor=state==='후보'?String(f.get('alternativeFor')||''):'',legMinutes=String(f.get('legMinutes')||'').trim();
+  if(state==='후보'&&t.stops.some(v=>Number(v.day)===detailDay&&v.id!==x?.id&&!v.candidate)&&!alternativeFor){toast('어떤 일정의 대체 후보인지 먼저 선택해 주세요.');return}
   if(legMinutes&&(!Number.isInteger(Number(legMinutes))||Number(legMinutes)<0||Number(legMinutes)>1440)){toast('이동 시간을 확인해 주세요.');return}
   const raw=String(f.get('cost')||'').trim(),cur=String(f.get('currency')||'KRW');
   if(raw&&(!Object.hasOwn(MOA_CURRENCIES,cur)||!expenseAmountValid(Number(raw),cur))){toast('비용과 통화를 확인해 주세요.');return}
@@ -925,8 +927,8 @@ function formStop(editId){
   else{vals.lat=null;vals.lon=null}
   Object.assign(current,vals);if(!x){dayStops(t).forEach((v,i)=>v.order=i);t.stops.push(current)}
   try{syncStopExpense(t,current,f)}
-  catch(err){if(x)Object.assign(x,before);else t.stops=t.stops.filter(v=>v.id!==current.id);t.expenses=expenseBefore;toast(err.message);return}
-  if(!save()){if(x)Object.assign(x,before);else t.stops=t.stops.filter(v=>v.id!==current.id);t.expenses=expenseBefore;return}
+  catch(err){if(x){for(const key of Object.keys(x))delete x[key];Object.assign(x,before)}else t.stops=t.stops.filter(v=>v.id!==current.id);t.expenses=expenseBefore;toast(err.message);return}
+  if(!save()){if(x){for(const key of Object.keys(x))delete x[key];Object.assign(x,before)}else t.stops=t.stops.filter(v=>v.id!==current.id);t.expenses=expenseBefore;return}
   closeModal();detail();toast(x?'장소를 수정했어요.':'새 장소를 추가했어요!');
  };
 }
