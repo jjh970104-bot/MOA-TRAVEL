@@ -1124,6 +1124,51 @@ function travelDayMap(t){
 function moaShanghaiLocation(t){
  return /상하이|상해|shanghai|上海/i.test(String(t?.destination||''));
 }
+// Curated Shanghai landmarks with stable reference coordinates. Never guess branch-specific POIs.
+const MOA_SHANGHAI_KNOWN=[
+ {re:/^(?:상하이\s*)?(?:푸동|浦东|pudong)\s*(?:국제)?\s*(?:공항|airport)(?:\s*(?:도착|출발))?$/i,lat:31.1427,lon:121.8148,label:'Shanghai Pudong International Airport'},
+ {re:/^(?:상하이\s*)?(?:홍차오|虹桥|hongqiao)\s*(?:국제)?\s*(?:공항|airport)(?:\s*(?:도착|출발))?$/i,lat:31.19765,lon:121.33422,label:'Shanghai Hongqiao International Airport'},
+ {re:/^(?:상하이\s*)?(?:디즈니랜드|디즈니\s*랜드|disneyland)(?:\s*🎠)?$/i,lat:31.14626,lon:121.65617,label:'Shanghai Disneyland'},
+ {re:/^(?:우캉맨션|우캉\s*맨션|우캉대루|武康大楼|wukang\s*mansion)(?:\s*점)?$/i,lat:31.2045,lon:121.4383,label:'Wukang Mansion'},
+ {re:/^(?:우캉루|武康路|wukang\s*road)(?:\s*산책)?$/i,lat:31.2045,lon:121.4383,label:'Wukang Road (southern landmark)'},
+ {re:/^(?:신천지|신톈디|新天地|xintiandi)(?:\s*거리)?$/i,lat:31.22194,lon:121.4705,label:'Xintiandi'},
+ {re:/^(?:티엔즈팡|톈쯔팡|田子坊|tianzifang)$/i,lat:31.21023,lon:121.4641,label:'Tianzifang'},
+ {re:/^(?:예원|豫园|yu\s*yuan|yu\s*garden)(?:\s*(?:야경|정원|관광))?$/i,lat:31.22892,lon:121.48775,label:'Yu Garden'},
+ {re:/^(?:와이탄|外滩|the\s*bund)(?:\s*(?:야경|산책))?$/i,lat:31.24033,lon:121.48604,label:'The Bund'},
+ {re:/^(?:동방명주|东方明珠|oriental\s*pearl)(?:\s*(?:타워|tower))?$/i,lat:31.24194,lon:121.49517,label:'Oriental Pearl Tower'},
+ {re:/^(?:인민공원|人民公园|people'?s\s*park)(?:\s*산책)?$/i,lat:31.23386,lon:121.46872,label:"People's Park"},
+ {re:/^(?:인민광장|人民广场|people'?s\s*square)$/i,lat:31.2344,lon:121.47052,label:"People's Square"},
+ {re:/^(?:난징동루|南京东路|east\s*nanjing\s*road)(?:\s*(?:거리|쇼핑|산책))?$/i,lat:31.24025,lon:121.48015,label:'East Nanjing Road'}
+];
+function moaShanghaiKnownPoint(entry,t){
+ if(!moaShanghaiLocation(t)||!entry)return null;
+ if(entry.kind==='transport')return null; // Flights and transfers can have a different origin.
+ const name=String(entry.kind==='stay'?entry.source?.name:entry.source?.name||entry.name||'').trim().replace(/[🎄🎠🎡✈️📍🗺️]/g,'').trim();
+ const found=MOA_SHANGHAI_KNOWN.find(item=>item.re.test(name));
+ return found||null;
+}
+function moaSeedShanghaiTrip(t){
+ if(!moaShanghaiLocation(t)||!t)return 0;
+ const edits=[];
+ const all=[...(t.stops||[]).map(source=>({kind:'stop',source})),...(t.stays||[]).map(source=>({kind:'stay',source}))];
+ for(const entry of all){
+  const point=moaShanghaiKnownPoint(entry,t);
+  if(!point)continue;
+  const source=entry.source;
+  // Keep user-confirmed points; correct previously mislocated auto points only.
+  if(moaUsableLocation(source,t)&&source.moaGeoSource!=='shanghai-curated-v1')continue;
+  if(Number(source.lat)===point.lat&&Number(source.lon)===point.lon)continue;
+  edits.push({source,lat:source.lat,lon:source.lon,moaGeoSource:source.moaGeoSource});
+  source.lat=point.lat;source.lon=point.lon;source.moaGeoSource='shanghai-curated-v1';
+ }
+ if(!edits.length)return 0;
+ if(!save()){
+  for(const e of edits){e.source.lat=e.lat;e.source.lon=e.lon;e.source.moaGeoSource=e.moaGeoSource}
+  return 0;
+ }
+ return edits.length;
+}
+
 function moaInsideDestination(lat,lon,t){
  if(!Number.isFinite(Number(lat))||!Number.isFinite(Number(lon)))return false;
  if(moaShanghaiLocation(t)){
@@ -1481,7 +1526,7 @@ function shoppingView(t){
  (list.length?'<div class="v212-shopping-list">'+list.map(x=>'<article class="v212-shopping-item"><div><label><input type="checkbox" data-toggle-item="shopping:'+esc(x.id)+'" '+(x.done?'checked':'')+' '+(!canEditShopping(x)?'disabled':'')+'><strong class="'+(x.done?'doneText':'')+'">'+esc(x.name)+'</strong></label><small>'+esc(shoppingOwnerName(x))+(x.shop?' · '+esc(x.shop):'')+(x.note?' · '+esc(x.note):'')+'</small></div>'+(canEditShopping(x)?'<div><button class="secondary mini" data-edit-item="shopping:'+esc(x.id)+'">수정</button><button class="secondary mini" data-delete-item="shopping:'+esc(x.id)+'">삭제</button></div>':'<span class="tiny muted">보기 전용</span>')+'</article>').join('')+'</div>':'<div class="emptyMini">이 여행자의 쇼핑 물건은 아직 없어요.</div>');
 }
 function checklistView(t){const done=t.checklist.filter(x=>x.done).length;return `<div class="secthead"><h2>✅ 여행 준비 체크</h2><button class="secondary mini" data-add-item="checklist">＋ 준비물 추가</button></div><div class="miniStat">🌱 ${done}/${t.checklist.length}개 준비 완료</div>${t.checklist.length?t.checklist.map(x=>`<div class="listrow"><input class="list-check" type="checkbox" data-toggle-item="checklist:${esc(x.id)}" ${x.done?'checked':''} aria-label="${esc(x.name)} 완료"><label class="${x.done?'doneText':''}">${esc(x.name)}</label><button class="textbtn" data-edit-item="checklist:${esc(x.id)}">수정</button><button class="dots" data-delete-item="checklist:${esc(x.id)}">×</button></div>`).join(''):'<div class="emptyMini">🎒 여권·충전기·예약 확인 등 준비할 일을 모아봐요!</div>'}`}
-function detail(){const t=selected(detailId);if(!t){page='dashboard';dashboard();return}ensureTrip(t);const n=days(t);detailDay=Math.max(0,Math.min(detailDay,n-1));const date=new Date(parseDate(t.start));date.setDate(date.getDate()+detailDay);const dateStr=`${date.getMonth()+1}/${date.getDate()}`;let main='';
+function detail(){const t=selected(detailId);if(!t){page='dashboard';dashboard();return}ensureTrip(t);moaSeedShanghaiTrip(t);const n=days(t);detailDay=Math.max(0,Math.min(detailDay,n-1));const date=new Date(parseDate(t.start));date.setDate(date.getDate()+detailDay);const dateStr=`${date.getMonth()+1}/${date.getDate()}`;let main='';
 if(plannerTab==='schedule')main=`<div class="secthead"><h2>${plannerMode==='plan'?'🗓️ 날짜별 일정':'🎒 오늘의 여행'}</h2>${plannerMode==='plan'?'<button class="secondary mini" data-add-stop>＋ 장소 추가</button>':''}</div><div class="dayline v28-day-strip">${Array.from({length:n},(_,i)=>`<button class="daytab v28-daytab ${i===detailDay?'active':''}" data-day="${i}"><b>${dayDateLabel(t,i)}</b><small>${esc(dayTheme(t,i)||"DAY "+(i+1))}</small></button>`).join('')}</div><div class="v28-current-day"><div><span>DAY ${detailDay+1} · ${dayDateLabel(t,detailDay)}</span><h3>${esc(dayTheme(t,detailDay)||'오늘은 어디로 떠날까요?')}</h3></div>${plannerMode==='plan'?'<button class="secondary mini" data-edit-day-theme>✎ 테마</button>':''}</div>${plannerMode==='travel'?travelCompactHeader(t):'<p class="tinyHint">방문 순서와 장소 간 이동수단을 기록할 수 있어요. 대체 장소는 번호 대신 후보로 표시돼요.</p>'}${travelDayMap(t)}<div id="travelScheduleSection" class="${plannerMode==='travel'?'moa-travel-schedule':''}" style="margin-top:12px">${itineraryRows(t)}</div>${plannerMode==='travel'?travelQuickExpense(t):''}`;
 if(plannerTab==='stays')main=staysView(t);if(plannerTab==='transport')main=transportView(t);if(plannerTab==='expense')main=expenseView(t);if(plannerTab==='shopping')main=shoppingView(t);if(plannerTab==='checklist')main=checklistView(t);if(plannerTab==='phrases')main=phraseGuideView(t);
 const completed=t.stops.filter(x=>x.done).length;
