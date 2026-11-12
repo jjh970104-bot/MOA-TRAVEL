@@ -1,3 +1,13 @@
+## MOA V2.9 — Integrated itinerary cards & editor (2026-11-12)
+
+- Planning mode shows stop category, status, memo, address and linked expense inline rather than hiding them under a details disclosure. Travel mode remains compact.
+- A stop may be a candidate with `alternativeFor` referencing a primary stop ID on the same day. The stop editor now asks users to pick the confirmed/primary stop they are replacing; if available and an alternative is being chosen, the parent is required. Planning view groups candidates immediately under their parent and labels them `후보`, never as an ordinary numbered stop. Candidates not yet linked to a parent continue at the end; travel mode hides them.
+- Stop add/edit form combines time, category, planned/confirmed/candidate state, alternative parent, inbound travel transport/duration, location, note, and optional expense amount/currency/status/payer.
+- Expense stored in the **existing `expenses[]` collection** with a new optional `linkedStopId` field; each linked stop keeps an `expenseId` pointer. Editing stop cost updates the same existing expense, not a new row. Deleting a stop retains its expense as an unlinked standalone record instead of destroying money data. Removing the amount from the stop editor clears the linked expense; use with care.
+- Imported historical stop `cost` is displayed without modification, and matching existing legacy expenses may be reused to avoid duplicate amounts upon editing. All expenses remain in the original per-currency totals. Firebase rules are unchanged; V1.9 shared document merge persists new stop/expense properties.
+- For collaborative trips, payer is selected from participant list. For private trips it remains free-text.
+- Tested isolated linked expense creation/re-edit/reuse, candidate exclusion and ordering, inline details, and JS syntax. Actual browser and multi-account end-to-end test is still required. Original independent Shanghai V14 website not modified.
+
 ## V2.8 — Destination, dates, itinerary cards and transfer legs (2026-11-11)
 
 Revises the MOA interface inspired by the user's *separate, unchanged* Shanghai V14 planner:
