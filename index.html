@@ -2239,18 +2239,37 @@ async function deleteCollabStop(id){
   try{await setupCloud().db.collection('collabTrips').doc(collabId).collection('stops').doc(id).delete();toast('공동 일정을 삭제했어요.')}
   catch(e){toast('삭제 실패: '+(e.code||e.message))}
 }
+function collabInviteMessage(title,url){
+  return '💌 '+String(title||'우리의 여행').trim()+'에 초대해요!\n\n'+
+    '모아(MOA)에서 일정, 숙소, 경비를 함께 확인하고 여행을 준비해요. 🌷\n\n'+
+    '👇 아래 링크로 참여해 주세요.\n'+url+'\n\n'+
+    '※ 모아 회원가입 및 이메일 인증 후 참여할 수 있어요.';
+}
+async function copyShareText(text,successMessage){
+  try{
+    await navigator.clipboard.writeText(text);
+    toast(successMessage||'초대 메시지를 복사했어요! 💌');
+  }catch(e){prompt('아래 내용을 길게 눌러 복사해 주세요.',text)}
+}
 async function collabInvite(){
   if(collabRole!=='owner'){toast('공동 편집 초대는 여행장만 만들 수 있어요.');return}
   try{
     const ref=setupCloud().db.collection('collabInvites').doc();
-    await ref.set({tripId:collabId,ownerUid:cloudUser.uid,title:collabMeta.title,destination:collabMeta.destination||'',createdAt:firebase.firestore.FieldValue.serverTimestamp()});
+    const title=collabMeta?.title||selected(detailId)?.title||'우리의 여행';
+    await ref.set({tripId:collabId,ownerUid:cloudUser.uid,title,destination:collabMeta?.destination||'',createdAt:firebase.firestore.FieldValue.serverTimestamp()});
     const url=location.origin+location.pathname+'#collab='+encodeURIComponent(ref.id);
-    try{await navigator.clipboard.writeText(url);toast('공동 편집 초대 링크를 복사했어요!')}catch(e){prompt('초대 링크를 복사해 주세요.',url)}
-    modal('<div class="modalhead"><h2>🔗 공동 편집 초대</h2><button class="iconbtn" data-close>×</button></div><p class="note">링크를 받은 인증된 모아 회원은 동행자로 참여해 여행 정보를 함께 수정할 수 있어요. 링크가 전달되면 다른 사람도 참여할 수 있으니 신뢰하는 사람에게만 공유해줘.</p><div class="field"><label>초대 링크</label><input readonly value="'+esc(url)+'"></div><div class="actionrow"><button class="secondary" id="copyCollabInvite">링크 복사</button></div>');
-    document.getElementById('copyCollabInvite').onclick=()=>copyShareText(url);
+    const message=collabInviteMessage(title,url);
+    modal('<div class="modalhead"><h2>💌 여행에 초대하기</h2><button class="iconbtn" data-close>×</button></div>'+
+      '<p class="tinyHint">여행 이름과 참여 링크가 포함된 메시지를 복사해 카카오톡이나 문자로 보내세요.</p>'+
+      '<div class="field"><label>보낼 초대 메시지</label><textarea id="moaInvitePreview" readonly rows="8">'+esc(message)+'</textarea></div>'+
+      '<div class="actionrow"><button class="primary" type="button" id="copyCollabInvite">💌 초대 메시지 복사</button>'+
+      '<button class="secondary" type="button" id="copyCollabUrl">링크만 복사</button></div>'+
+      '<p class="tinyHint">링크를 받은 이메일 인증 완료 회원은 공동 여행에 참여할 수 있어요. 신뢰하는 사람에게만 공유해 주세요.</p>');
+    document.getElementById('copyCollabInvite').onclick=()=>copyShareText(message);
+    document.getElementById('copyCollabUrl').onclick=()=>copyShareText(url,'링크만 복사했어요!');
+    await copyShareText(message,'초대 메시지를 복사했어요! 카카오톡에 붙여넣어 보내세요. 💌');
   }catch(e){toast('초대 생성 실패: '+(e.code||e.message))}
 }
-async function copyShareText(url){try{await navigator.clipboard.writeText(url);toast('링크를 복사했어요!')}catch(e){prompt('링크를 복사해 주세요.',url)}}
 async function openCollabInvite(token){
   if(!/^[A-Za-z0-9_-]{8,128}$/.test(token||''))return;
   if(!userVerified()){pendingCollabToken=token;accountModal();return}
