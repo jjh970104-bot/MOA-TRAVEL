@@ -1,3 +1,11 @@
+## MOA V2.11 — Trip list deletion and cloud usability (2026-11-12)
+
+- Existing user accounts **do not need to opt into cloud storage**: V2.10 already introduced automatic verified-user cloud loading and saves to `users/{uid}/data/travel`. Same account on another device fetches server travel docs. This is distinct from collaboration data stored in `collabTrips`.
+- In **내 여행**, ordinary personal trip cards now include a **여행 삭제** action. A confirmation is required; deletion is applied to the signed-in user's Firestore document via a transaction before removing the local UID-scoped backup. The action is blocked while other personal-trip writes are pending, on disconnection, and for owner source trips linked to an actively shared collaboration. It does not delete anyone else's shared trip.
+- Invited collaboration cards continue to have an explicit **내 목록에서 삭제** button. This only deletes `users/{uid}/collaborations/{tripId}`; it does **not** delete the shared trip or revoke membership. Owner-linked cards are intentionally protected. Shared-trip full deletion/leave workflow remains a separate future feature.
+- If initial personal-server loading fails, the signed-in user may see their own **UID-scoped saved trip list** (read-only banner) rather than a blocking screen; `다시 연결` retries Firebase. Private trip opening/modification remains blocked in that fallback to prevent editing a stale copy. On a new device with no local cache, server connection is still required to retrieve saved trips. Invited trips can still be listed from their independent collaboration listener.
+- JS syntax and card differentiation tests passed. Actual real-account Firestore transaction, offline recovery, and cross-device state tests require user browser verification. No new security rules required. Independent Shanghai V14 remains untouched.
+
 ## MOA V2.10 — Ease of use & safer account storage (2026-11-12)
 
 ### User-facing improvements
