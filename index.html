@@ -587,6 +587,24 @@
  .v2-detail .v28-card-address button{padding:6px 8px}
  .v2-detail{padding-bottom:108px}
 }
+/* V2.15 map safety & mobile visual cleanup */
+@media(max-width:700px){
+  .v2-detail .v2-main .secthead{margin-bottom:3px}
+  .v2-detail .v2-main .secthead h2{font-size:15px}
+  .v2-detail .v28-current-day{background:transparent;border:0;border-bottom:1px solid #e8eee7;border-radius:0;padding:5px 2px 9px;margin:0 0 5px}
+  .v2-detail .v28-current-day span{font-size:11px}
+  .v2-detail .v28-current-day h3{font-size:15px}
+  .v2-detail .v28-current-day button{padding:6px 9px;font-size:10px}
+  .v2-detail .v2-main>.tinyHint{display:none}
+  .v2-detail .moa-travel-map{border:0;background:transparent;padding:0;margin:8px 0}
+  .v2-detail .moa-travel-map .moa-travel-map-head{padding:0 2px}
+  .v2-detail .moa-travel-map .v2-map-wrap{border-radius:12px}
+  .v2-detail .moa-travel-map .routeMapCanvas{height:245px;min-height:245px}
+  .v2-detail .moa-map-status{padding:4px 2px}
+  .v2-detail .v28-transfer{margin-left:16px;min-height:23px;padding:4px 7px;font-size:10px;border:0!important;background:#edf5fa!important}
+  .v2-detail .v28-itinerary-card{border-radius:12px}
+  #toastRoot .toast{position:fixed;top:auto;bottom:calc(105px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);width:max-content;max-width:min(90vw,340px);padding:9px 12px;font-size:12px;line-height:1.45;z-index:2000;pointer-events:none;box-shadow:0 5px 18px #10241929}
+}
 </style>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/><script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script><script defer src="https://www.gstatic.com/firebasejs/13.2.0/firebase-app-compat.js"></script><script defer src="https://www.gstatic.com/firebasejs/13.2.0/firebase-auth-compat.js"></script><script defer src="https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore-compat.js"></script><script defer src="firebase-config.js"></script></head>
 <body>
@@ -1091,7 +1109,7 @@ function routePreview(t){
 
 function travelDayMap(t){
  const entries=itineraryEntries(t).filter(x=>!x.candidate);
- const located=entries.filter(x=>locationAvailable(x)&&Math.abs(Number(x.lat))<=90&&Math.abs(Number(x.lon))<=180);
+ const located=entries.filter(x=>moaUsableLocation(x,t));
  const missing=entries.filter(x=>!located.includes(x));
  const editable=!collabId||['owner','editor'].includes(collabRole);
  return '<section class="moa-travel-map" id="travelMapSection" aria-label="날짜별 일정 지도">'+
@@ -1100,12 +1118,21 @@ function travelDayMap(t){
   '<button type="button" class="secondary mini" data-route-map '+(entries.length<2?'disabled':'')+'>↗ 길찾기</button></div></div>'+
   '<div class="v2-map-wrap"><div id="travelDayMapCanvas" class="routeMapCanvas" aria-label="방문 장소 지도"></div></div>'+
   (entries.length?'<div class="moa-map-chips">'+entries.map((x,i)=>'<button type="button" class="moa-map-chip '+(locationAvailable(x)?'':'no-pin')+'" data-travel-map-item="'+esc(itemOrderKey(x))+'"><b>'+(i+1)+'</b>'+esc(x.name)+'</button>').join('')+'</div>':'')+
-  '<div class="moa-map-status" id="moaMapStatus" role="status">'+(missing.length?'<span>위치 없는 장소 '+missing.length+'곳</span>':'<span>위치 연결 완료</span>')+
+  '<div class="moa-map-status" id="moaMapStatus" role="status">'+(missing.length?'<span>'+(missing.some(x=>locationAvailable(x))?'잘못된 위치 포함 · ':'')+'위치 확인 필요한 장소 '+missing.length+'곳</span>':'<span>위치 연결 완료</span>')+
   (missing.length&&editable?'<button class="textbtn" type="button" data-map-locate="'+esc(itemOrderKey(missing[0]))+'">개별 검색</button>':'')+'</div></section>';
 }
 function moaShanghaiLocation(t){
  return /상하이|상해|shanghai|上海/i.test(String(t?.destination||''));
 }
+function moaInsideDestination(lat,lon,t){
+ if(!Number.isFinite(Number(lat))||!Number.isFinite(Number(lon)))return false;
+ if(moaShanghaiLocation(t)){
+   // Shanghai municipality and its airports; do not accept points in another country or continent.
+   return Number(lat)>=30.55&&Number(lat)<=31.95&&Number(lon)>=120.75&&Number(lon)<=122.35;
+ }
+ return Math.abs(Number(lat))<=90&&Math.abs(Number(lon))<=180;
+}
+function moaUsableLocation(x,t){return locationAvailable(x)&&moaInsideDestination(x.lat,x.lon,t)}
 function moaMapSearchQuery(entry,t){
  const name=String(entry?.kind==='transport'?(entry.source?.from||entry.address):(entry.source?.name||entry.name)||'').trim();
  const address=String(entry?.address||'').trim();
@@ -1163,9 +1190,9 @@ function moaGeocodeUniqueCandidate(results,query,t){
   if(r.confidence>=.9)score+=2;
   return score;
  };
- const sorted=results.map(r=>({...r,score:rank(r)})).sort((a,b)=>b.score-a.score);
+ const sorted=results.filter(r=>moaInsideDestination(r.lat,r.lon,t)).map(r=>({...r,score:rank(r)})).sort((a,b)=>b.score-a.score);
  // Skip ambiguous names, countries and low-confidence results rather than drawing incorrect pins.
- if(sorted[0].score<3||sorted.length>1&&sorted[0].score===sorted[1].score)return null;
+ if(!sorted.length||sorted[0].score<4||sorted.length>1&&sorted[0].score===sorted[1].score)return null;
  return sorted[0];
 }
 let moaAutoLocationBusy=false;
@@ -1173,9 +1200,9 @@ async function moaAutoLocateDay(){
  if(moaAutoLocationBusy)return;
  if(collabId&&!['owner','editor'].includes(collabRole)){toast('위치 연결 권한이 없어요.');return}
  const trip=selected(detailId);if(!trip)return;
- const entries=itineraryEntries(trip).filter(x=>!x.candidate&&!locationAvailable(x));
+ const entries=itineraryEntries(trip).filter(x=>!x.candidate&&!moaUsableLocation(x,trip));
  const status=document.getElementById('moaMapStatus'),button=document.querySelector('[data-auto-locate-day]');
- if(!entries.length){toast('이미 모든 위치가 연결됐어요.');return}
+ if(!entries.length){toast('지도 위치를 모두 확인했어요.');return}
  moaAutoLocationBusy=true;if(button)button.disabled=true;
  let linked=0,ambiguous=0,failed=0;
  // Small user-triggered batch: public search servers cannot be used for unlimited bulk lookup.
@@ -1189,10 +1216,10 @@ async function moaAutoLocateDay(){
    if(!query||/^(아침|점심|저녁|카페|호텔|이동|미정)$/i.test(query)){ambiguous++;continue}
    try{
     const results=await moaGeocode(query);
-    const best=moaGeocodeUniqueCandidate(results,query,trip);
+    const best=moaGeocodeUniqueCandidate(results.filter(r=>moaInsideDestination(r.lat,r.lon,trip)),query,trip);
     if(!best){ambiguous++;continue}
     const current=entry.source;
-    if(!current||locationAvailable(current))continue;
+    if(!current||moaUsableLocation(current,trip))continue;
     const oldLat=current.lat,oldLon=current.lon;
     current.lat=best.lat;current.lon=best.lon;
     if(!save()){current.lat=oldLat;current.lon=oldLon;failed++;break}
@@ -1227,7 +1254,7 @@ async function mapLocationPicker(key){
     button.disabled=true;box.textContent='🔎 장소 검색 중…';
     const q=moaMapSearchQuery({...entry,name:value,address:value,source:{...entry.source,name:value,from:value}},t);
     try{
-      const valid=await moaGeocode(q);
+      const valid=(await moaGeocode(q)).filter(v=>moaInsideDestination(v.lat,v.lon,t));
       if(!document.getElementById('moaMapSearchResults'))return;
       box.innerHTML=valid.length?valid.map((v,i)=>'<button type="button" data-map-location-option="'+i+'"><b>📍 '+esc(v.label.split(',')[0]||'장소')+'</b><small>'+esc(v.label)+'</small></button>').join(''):'검색 결과가 없어요. 영어 장소명 또는 현지 지명으로 다시 검색해 주세요.';
       box.querySelectorAll('[data-map-location-option]').forEach(b=>b.onclick=()=>{
@@ -1248,7 +1275,7 @@ function mountTravelDayMap(){
   if(!el)return;
   const t=selected(detailId);if(!t)return;
   const all=itineraryEntries(t).filter(x=>!x.candidate);
-  const points=all.map((item,index)=>({item,index})).filter(x=>locationAvailable(x.item)&&Math.abs(Number(x.item.lat))<=90&&Math.abs(Number(x.item.lon))<=180);
+  const points=all.map((item,index)=>({item,index})).filter(x=>moaUsableLocation(x.item,t));
   if(!window.L){
     el.innerHTML='<div class="v2-map-placeholder"><span>🗺️</span><strong>지도를 불러오지 못했어요</strong><small>네트워크 상태를 확인해 주세요. 아래 방문 목록은 계속 사용할 수 있어요.</small></div>';
     return;
