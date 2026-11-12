@@ -437,7 +437,7 @@
 .tripgrid>*{min-width:0;max-width:100%;box-sizing:border-box}
 @media(max-width:550px){.newtripCard{min-height:175px}.pagehead h1{font-size:clamp(24px,6vw,30px)}.shell{overflow-x:clip}.v212-find input{font-size:16px}}
 @media(max-width:350px){.v212-find{grid-template-columns:minmax(0,1fr)}}
-</style>
+ .payerChoice{display:flex;flex-direction:column;gap:7px}.payerChoice input[hidden]{display:none!important}\n</style>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/><script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script><script defer src="https://www.gstatic.com/firebasejs/13.2.0/firebase-app-compat.js"></script><script defer src="https://www.gstatic.com/firebasejs/13.2.0/firebase-auth-compat.js"></script><script defer src="https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore-compat.js"></script><script defer src="firebase-config.js"></script></head>
 <body>
 <header class="topbar"><div class="shell toprow"><button class="brand" data-nav="home"><span class="brandmark">✿</span><span class="brandtext">moa<span style="color:#8cb397">.</span></span></button><nav class="topnav"><button class="navlink active" data-nav="home">홈</button><button class="navlink" data-nav="about">모아 알아보기</button><button class="navlink" data-nav="dashboard">내 여행</button><button class="navlink" data-nav="explore">여행 탐색</button><button class="navlink" data-nav="community">커뮤니티</button></nav><div class="topactions"><button class="secondary" id="accountButton" data-account>로그인 / 회원가입</button><button class="primary" id="topCreate">＋ 여행 만들기</button></div></div></header>
@@ -999,29 +999,35 @@ function currencyChoices(t,chosen){
 }
 function payerList(x){
   const map=new Map();
-  for(const m of expenseMembers){if(m.uid&&m.role!=='removed')map.set(m.uid,String(m.name||'여행자'))}
-  if(x?.payerUid&&!map.has(x.payerUid))map.set(x.payerUid,String(x.payer||'이전 여행자'));
+  if(collabId){
+    for(const m of expenseMembers)if(m.uid&&m.role!=='removed')map.set(m.uid,String(m.name||'여행자'));
+    if(x?.payerUid&&!map.has(x.payerUid))map.set(x.payerUid,String(x.payer||'이전 여행자'));
+  }else{
+    const t=selected(detailId);
+    const me=String(cloudUser?.displayName||'').trim();
+    if(me)map.set('name:'+me,me);
+    for(const e of t?.expenses||[])if(e.payer&&!e.payerUid)map.set('name:'+e.payer,String(e.payer));
+    if(x?.payer&&!x?.payerUid)map.set('name:'+x.payer,String(x.payer));
+  }
   return [...map].map(([uid,name])=>({uid,name}));
 }
 function payerChoiceHTML(x){
-  if(!collabId)return '<input name="payer" maxlength="40" value="'+esc(x?.payer||'')+'" placeholder="결제자 이름 (선택)">';
-  const members=payerList(x);
-  const manual=!!(x?.payer&&!x?.payerUid);
-  return '<span class="payerChoice"><select name="payerUid" aria-label="결제자 선택"><option value="" '+(!manual&&!x?.payerUid?'selected':'')+'>결제자 선택</option>'+
-    members.map(m=>'<option value="'+esc(m.uid)+'" '+(x?.payerUid===m.uid?'selected':'')+'>'+esc(m.name)+'</option>').join('')+
+  const members=payerList(x),manual=!!(x?.payer&&!x?.payerUid&&!members.some(m=>m.name===x.payer));
+  const chosen=x?.payerUid||(x?.payer&&!manual?'name:'+x.payer:'');
+  return '<span class="payerChoice"><select name="payerUid" aria-label="결제자 선택"><option value="" '+(!manual&&!chosen?'selected':'')+'>결제자 선택</option>'+
+    members.map(m=>'<option value="'+esc(m.uid)+'" '+(chosen===m.uid?'selected':'')+'>'+esc(m.name)+'</option>').join('')+
     '<option value="__manual__" '+(manual?'selected':'')+'>✏️ 직접 입력</option></select>'+
     '<input name="payer" maxlength="40" aria-label="직접 입력할 결제자 이름" value="'+esc(manual?x.payer:'')+'" placeholder="결제자 이름을 입력해 주세요" '+(manual?'':'hidden')+' autocomplete="off"></span>'+
-    (!members.length?'<small class="tinyHint">여행자 목록을 불러오는 중이에요. 직접 입력도 가능해요.</small>':'');
+    (collabId&&!expenseMembers.length?'<small class="tinyHint">여행자 목록을 불러오는 중이에요. 직접 입력도 가능해요.</small>':'');
 }
 function payerFields(form,old){
-  if(!collabId)return {payer:String(form.get('payer')||'').trim(),payerUid:null};
   const uid=String(form.get('payerUid')||'');
   if(uid==='__manual__')return {payer:String(form.get('payer')||'').trim().slice(0,40),payerUid:null};
   if(!uid&&old?.payer&&!old?.payerUid)return {payer:old.payer,payerUid:null};
   if(!uid)return {payer:'',payerUid:null};
   const found=payerList(old).find(m=>m.uid===uid);
   if(!found)throw Error('여행자 목록을 새로 불러온 뒤 선택해 주세요.');
-  return {payer:found.name,payerUid:uid};
+  return {payer:found.name,payerUid:collabId?uid:null};
 }
 document.addEventListener('change',e=>{
   if(!e.target?.matches?.('.payerChoice select[name="payerUid"]'))return;
