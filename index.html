@@ -1783,7 +1783,7 @@ async function openCollabInvite(token){
     };
   }catch(e){toast('초대 확인 실패: '+(e.code||e.message))}
 }
-function safeMemberPhoto(raw){return typeof raw==='string'&&raw.length<32000&&/^data:image\/jpeg;base64,[a-zA-Z0-9+/=]+$/.test(raw)?raw:''}
+function safeMemberPhoto(raw){return typeof raw==='string'&&raw.length<=24000&&/^data:image\/jpeg;base64,[a-zA-Z0-9+/=]+$/.test(raw)?raw:''}
 function memberAvatar(m){
   const name=String(m?.name||'여행자').trim(),photo=safeMemberPhoto(m?.photo);
   return '<span class="moa-member-avatar" aria-hidden="true">'+(photo?'<img alt="" src="'+photo+'">':esc(name.slice(0,1)||'여'))+'</span>';
@@ -1797,7 +1797,7 @@ async function compressMemberPhoto(file){
     canvas.getContext('2d').drawImage(img,sx,sy,side,side,0,0,size,size);
     for(const quality of [.75,.55,.4]){
       const data=canvas.toDataURL('image/jpeg',quality);
-      if(data.length<30000)return data;
+      if(data.length<=22000)return data;
     }
   }
   throw Error('사진 용량을 줄이지 못했어요. 다른 사진을 선택해 주세요.');
