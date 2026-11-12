@@ -1006,18 +1006,30 @@ function payerList(x){
 function payerChoiceHTML(x){
   if(!collabId)return '<input name="payer" maxlength="40" value="'+esc(x?.payer||'')+'" placeholder="결제자 이름 (선택)">';
   const members=payerList(x);
-  return '<select name="payerUid"><option value="">결제자 선택</option>'+members.map(m=>'<option value="'+esc(m.uid)+'" '+(x?.payerUid===m.uid?'selected':'')+'>'+esc(m.name)+'</option>').join('')+'</select>'+
-    (!members.length?'<small class="tinyHint">여행자 목록을 불러오는 중이에요.</small>':'')+
-    (x?.payer&&!x?.payerUid?'<small class="tinyHint">기존 결제자: '+esc(x.payer)+' · 새 결제자를 선택하면 변경돼요.</small>':'');
+  const manual=!!(x?.payer&&!x?.payerUid);
+  return '<span class="payerChoice"><select name="payerUid" aria-label="결제자 선택"><option value="" '+(!manual&&!x?.payerUid?'selected':'')+'>결제자 선택</option>'+
+    members.map(m=>'<option value="'+esc(m.uid)+'" '+(x?.payerUid===m.uid?'selected':'')+'>'+esc(m.name)+'</option>').join('')+
+    '<option value="__manual__" '+(manual?'selected':'')+'>✏️ 직접 입력</option></select>'+
+    '<input name="payer" maxlength="40" aria-label="직접 입력할 결제자 이름" value="'+esc(manual?x.payer:'')+'" placeholder="결제자 이름을 입력해 주세요" '+(manual?'':'hidden')+' autocomplete="off"></span>'+
+    (!members.length?'<small class="tinyHint">여행자 목록을 불러오는 중이에요. 직접 입력도 가능해요.</small>':'');
 }
 function payerFields(form,old){
   if(!collabId)return {payer:String(form.get('payer')||'').trim(),payerUid:null};
   const uid=String(form.get('payerUid')||'');
-  const found=payerList(old).find(m=>m.uid===uid);
-  if(uid&&!found)throw Error('여행자 목록을 새로 불러온 뒤 선택해 주세요.');
+  if(uid==='__manual__')return {payer:String(form.get('payer')||'').trim().slice(0,40),payerUid:null};
   if(!uid&&old?.payer&&!old?.payerUid)return {payer:old.payer,payerUid:null};
-  return {payer:found?.name||'',payerUid:uid||null};
+  if(!uid)return {payer:'',payerUid:null};
+  const found=payerList(old).find(m=>m.uid===uid);
+  if(!found)throw Error('여행자 목록을 새로 불러온 뒤 선택해 주세요.');
+  return {payer:found.name,payerUid:uid};
 }
+document.addEventListener('change',e=>{
+  if(!e.target?.matches?.('.payerChoice select[name="payerUid"]'))return;
+  const input=e.target.closest('.payerChoice')?.querySelector('input[name="payer"]');
+  if(!input)return;
+  input.hidden=e.target.value!=='__manual__';
+  if(!input.hidden)input.focus();
+});
 function payerName(x){
   const m=x?.payerUid?expenseMembers.find(v=>v.uid===x.payerUid):null;
   return m?.name||x?.payer||'미정';
