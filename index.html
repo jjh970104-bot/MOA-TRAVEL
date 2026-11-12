@@ -537,6 +537,56 @@
  .v2-detail .moa-travel-map .routeMapCanvas{height:225px;min-height:225px}
 }
 
+
+/* V2.14 focus: more map, less chrome */
+.v2-detail .v2-summarycounts{font-size:11px}
+.v2-detail .v28-itinerary-card{padding:10px 11px;margin:5px 0;border-radius:13px;gap:9px}
+.v2-detail .v28-card-top strong{font-size:14px;line-height:1.4}
+.v2-detail .v28-card-meta{margin:4px 0;gap:5px}
+.v2-detail .v28-card-meta span{padding:3px 6px}
+.v2-detail .v28-transfer{margin:2px 9px 2px 34px;padding:5px 9px;min-height:27px;border-radius:9px;font-size:11px}
+.v2-detail .v28-transfer button{padding:3px 6px}
+.moa-card-tools{position:relative;flex:none;align-self:flex-start;z-index:4}
+.moa-card-tools>summary{width:34px;height:34px;display:grid;place-items:center;cursor:pointer;list-style:none;border:1px solid #dce7dc;border-radius:10px;background:#f8faf7;font-weight:900}
+.moa-card-tools>summary::-webkit-details-marker{display:none}
+.moa-card-tool-list{position:absolute;right:0;top:calc(100% + 5px);width:145px;display:grid;gap:5px;background:white;border:1px solid #dce7dc;border-radius:12px;padding:8px;box-shadow:0 12px 26px #0002}
+.moa-card-tool-list button{text-align:left;padding:7px 9px}
+.moa-card-details{margin:5px 0}.moa-card-details>summary{font-size:11px;color:#658571;cursor:pointer;list-style:none;display:inline-flex;align-items:center;gap:4px}
+.moa-card-details>summary:before{content:'▸';font-size:10px}
+.moa-card-details[open]>summary:before{content:'▾'}
+.moa-card-details>summary::-webkit-details-marker{display:none}
+.moa-card-details .v29-plan-detail{margin:5px 0 0}
+.moa-map-actions{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:5px}
+.moa-map-actions .mini{padding:7px 9px;font-size:11px;white-space:nowrap}
+.moa-map-status{display:flex;gap:10px;align-items:center;justify-content:space-between;padding:7px 2px 0;font-size:11px;color:#798b7e}
+.moa-travel-map .moa-map-chips{flex-wrap:nowrap;overflow-x:auto;gap:5px}
+.moa-travel-map .moa-map-chip{padding:6px 8px;font-size:11px}
+.moa-travel-map .moa-map-chip b{height:19px;width:19px;font-size:10px}
+.moa-travel-map .moa-map-note{display:none}
+@media(max-width:700px){
+ .v2-detail .v2-hero{padding:8px 11px}
+ .v2-detail .v2-hero .eyebrow{font-size:10px}
+ .v2-detail .v2-hero h1{font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:calc(100vw - 118px)}
+ .v2-detail .v2-hero p{font-size:10px}
+ .v2-detail .v2-hero .v2-symbol,.v2-detail .v2-hero .v210-hero-cover{display:none}
+ .v2-detail .v2-summarybar{gap:4px;align-items:center}
+ .v2-detail .v2-summarycounts{display:none}
+ .v2-detail .v2-quickactions{width:100%;display:flex;gap:7px}
+ .v2-detail .v2-quickactions>*{flex:1;min-width:0}
+ .v2-detail .v2-quickactions .mini{padding:9px 7px;font-size:11px;white-space:nowrap}
+ .v2-detail .v2-navarea{flex-direction:column-reverse;align-items:stretch;gap:8px}
+ .v2-detail .v2-navarea .plannerTabs{display:flex!important;flex-wrap:nowrap!important;overflow-x:auto;min-height:45px}
+ .v2-detail .v2-navarea .plannerTabs button{flex:none}
+ .v2-detail .v2-modebar{align-self:stretch;display:grid;grid-template-columns:1fr 1fr}
+ .v2-detail .v2-modebar button{min-height:40px}
+ .v2-detail .moa-travel-map{padding:8px;margin:6px 0 9px}
+ .v2-detail .moa-travel-map .routeMapCanvas{height:205px;min-height:205px}
+ .v2-detail .v28-card-top strong{font-size:13px}
+ .v2-detail .v28-itinerary-card{padding:9px 9px}
+ .v2-detail .v28-card-address{margin-top:3px}
+ .v2-detail .v28-card-address button{padding:6px 8px}
+ .v2-detail{padding-bottom:108px}
+}
 </style>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/><script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script><script defer src="https://www.gstatic.com/firebasejs/13.2.0/firebase-app-compat.js"></script><script defer src="https://www.gstatic.com/firebasejs/13.2.0/firebase-auth-compat.js"></script><script defer src="https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore-compat.js"></script><script defer src="firebase-config.js"></script></head>
 <body>
@@ -1007,13 +1057,14 @@ function itineraryRows(t){
       (expenseLabel?'<p class="v29-inline-expense">💰 '+esc(expenseLabel)+'</p>':'')+
       (!note&&!x.address&&!expenseLabel&&!parentLabel?'<p class="v29-no-detail">등록된 메모가 없어요.</p>':'');
    const extra=mode?(note?'<p class="v28-travel-note">'+esc(note)+'</p>':''):
-     '<div class="v29-plan-detail">'+extraContent+'</div>';
+     '<details class="moa-card-details"><summary>메모 · 상세 보기</summary><div class="v29-plan-detail">'+extraContent+'</div></details>';
 
    const addr=x.address?'<div class="v28-card-address">'+(x.kind==='stop'?'<button type="button" class="textbtn" data-map="'+esc(s.id)+'">📍 지도</button>':'')+'<button type="button" class="textbtn" data-copy-itinerary="'+key+'">📋 주소 복사</button></div>':'';
-   const actions=x.kind==='stop'?
-     (mode?'<button class="v28-done" data-done-stop="'+esc(s.id)+'" aria-label="방문 완료 전환">'+(s.done?'✅':'○')+'</button>':
-      '<div class="v28-card-actions"><button class="secondary mini" title="위로" data-step-entry="'+key+':-1">↑</button><button class="secondary mini" title="아래로" data-step-entry="'+key+':1">↓</button><button data-edit-stop="'+esc(s.id)+'" aria-label="일정 수정">✎</button><button data-delete-stop="'+esc(s.id)+'" aria-label="일정 삭제">×</button></div>'):
-     mode?'':'<div class="v28-card-actions"><button class="secondary mini" data-step-entry="'+key+':-1">↑</button><button class="secondary mini" data-step-entry="'+key+':1">↓</button><button '+(x.kind==='stay'?'data-edit-stay':'data-edit-transport')+'="'+esc(x.id)+'">✎</button></div>';
+   const tools=mode?'':('<details class="moa-card-tools"><summary title="일정 관리">⋯</summary><div class="moa-card-tool-list">'+
+       '<button class="secondary mini" type="button" data-step-entry="'+key+':-1">↑ 위로</button><button class="secondary mini" type="button" data-step-entry="'+key+':1">↓ 아래로</button>'+
+       (x.kind==='stop'?'<button class="secondary mini" type="button" data-edit-stop="'+esc(s.id)+'">✎ 수정</button><button class="secondary mini" type="button" data-delete-stop="'+esc(s.id)+'">삭제</button>':
+       '<button class="secondary mini" type="button" '+(x.kind==='stay'?'data-edit-stay':'data-edit-transport')+'="'+esc(x.id)+'">✎ 수정</button>')+'</div></details>');
+   const actions=x.kind==='stop'&&mode?'<button class="v28-done" data-done-stop="'+esc(s.id)+'" aria-label="방문 완료 전환">'+(s.done?'✅':'○')+'</button>':tools;
    const card=top+meta+extra+addr+'</div>'+actions+'</div>';
    let transfer='';
    if(!candidate&&previous){
@@ -1172,35 +1223,21 @@ async function mapLocationPicker(key){
   const search=async()=>{
     const input=document.getElementById('moaMapSearch'),box=document.getElementById('moaMapSearchResults'),button=document.getElementById('moaMapSearchButton');
     if(!input||!box||!button)return;
-    const value=input.value.trim();
-    if(value.length<2){box.textContent='두 글자 이상 입력해 주세요.';return}
-    button.disabled=true;box.textContent='🔎 장소를 찾고 있어요…';
-    const city=String(t.destination||'').trim(),q=city&&!value.toLowerCase().includes(city.toLowerCase())?value+', '+city:value;
+    const value=input.value.trim();if(value.length<2){box.textContent='두 글자 이상 입력해 주세요.';return}
+    button.disabled=true;box.textContent='🔎 장소 검색 중…';
+    const q=moaMapSearchQuery({...entry,name:value,address:value,source:{...entry.source,name:value,from:value}},t);
     try{
-      const apiKey=localStorage.getItem(MAP_KEY)||'';
-      let result=[];
-      if(apiKey){
-        const response=await fetch('https://api.geoapify.com/v1/geocode/search?text='+encodeURIComponent(q)+'&format=json&limit=6&lang=ko&apiKey='+encodeURIComponent(apiKey));
-        if(!response.ok)throw Error('검색 서버 오류 '+response.status);
-        const data=await response.json();
-        result=(data.results||[]).map(v=>({lat:Number(v.lat),lon:Number(v.lon),address:v.formatted||'',name:v.name||''}));
-      }else{
-        const response=await fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=6&addressdetails=1&accept-language=ko&q='+encodeURIComponent(q),{headers:{Accept:'application/json'}});
-        if(!response.ok)throw Error('검색 서버 오류 '+response.status);
-        const data=await response.json();
-        result=data.map(v=>({lat:Number(v.lat),lon:Number(v.lon),address:v.display_name||'',name:v.name||''}));
-      }
+      const valid=await moaGeocode(q);
       if(!document.getElementById('moaMapSearchResults'))return;
-      const valid=result.filter(v=>Number.isFinite(v.lat)&&Number.isFinite(v.lon)&&Math.abs(v.lat)<=90&&Math.abs(v.lon)<=180);
-      box.innerHTML=valid.length?valid.map((v,i)=>'<button type="button" data-map-location-option="'+i+'"><b>📍 '+esc(v.name||v.address.split(',')[0]||'장소')+'</b><small>'+esc(v.address||'주소 미표시')+'</small></button>').join(''):'검색 결과가 없어요. 장소명과 도시명을 다시 입력해 주세요.';
+      box.innerHTML=valid.length?valid.map((v,i)=>'<button type="button" data-map-location-option="'+i+'"><b>📍 '+esc(v.label.split(',')[0]||'장소')+'</b><small>'+esc(v.label)+'</small></button>').join(''):'검색 결과가 없어요. 영어 장소명 또는 현지 지명으로 다시 검색해 주세요.';
       box.querySelectorAll('[data-map-location-option]').forEach(b=>b.onclick=()=>{
         const result=valid[Number(b.dataset.mapLocationOption)];if(!result)return;
         const old={lat:original.lat,lon:original.lon};
         original.lat=result.lat;original.lon=result.lon;
         if(!save()){original.lat=old.lat;original.lon=old.lon;return}
-        closeModal();detail();toast('📍 지도 위치를 연결했어요.');
+        closeModal();detail();toast('📍 선택한 지도 위치를 연결했어요.');
       });
-    }catch(err){if(document.getElementById('moaMapSearchResults'))box.textContent='검색에 실패했어요. 잠시 후 다시 시도해 주세요. ('+err.message+')'}
+    }catch(err){if(document.getElementById('moaMapSearchResults'))box.textContent='지도 검색 서버에 연결할 수 없어요. ('+err.message+')'}
     finally{if(document.getElementById('moaMapSearchButton'))button.disabled=false}
   };
   document.getElementById('moaMapSearchButton').onclick=search;
@@ -1233,7 +1270,7 @@ function mountTravelDayMap(){
     if(coords.length>1)L.polyline(coords,{color:'#56876a',weight:3,opacity:.8,dashArray:'7 7'}).addTo(routeMap);
     if(coords.length>1)routeMap.fitBounds(L.latLngBounds(coords).pad(.2),{maxZoom:15});
     else if(coords.length)routeMap.setView(coords[0],14);
-    else {routeMap.setView([30,110],3);el.insertAdjacentHTML('beforeend','<div class="moa-map-empty-overlay">📍 위치 연결을 누르면 핀이 나타나요</div>')}
+    else {routeMap.setView(moaShanghaiLocation(t)?[31.2304,121.4737]:[25,110],moaShanghaiLocation(t)?10:3)}
     setTimeout(()=>{if(document.getElementById('travelDayMapCanvas')===el)routeMap?.invalidateSize()},200);
   }catch(err){
     console.warn('여행 모드 지도 오류',err);
@@ -2442,7 +2479,7 @@ function exportSharedData(){
 }
 function exportData(){const blob=new Blob([JSON.stringify({version:'1.5',app:'moa',exportedAt:new Date().toISOString(),trips},null,2)],{type:'application/json'});const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='moa_trips_backup.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);toast('JSON 백업 파일을 저장했어요.')}
 document.addEventListener('toggle',e=>{if(e.target?.id==='optionalRouteMap'&&e.target.open)requestAnimationFrame(mountRouteMap)},true);
-document.addEventListener('click',e=>{const el=e.target.closest('button');if(!el)return;if(collabId&&collabRole==='viewer'&&['data-edit','data-edit-leg','data-edit-day-theme','data-add-stop','data-edit-stop','data-delete-stop','data-done-stop','data-step-entry','data-add-stay','data-edit-stay','data-delete-stay','data-add-transport','data-edit-transport','data-delete-transport','data-add-item','data-edit-item','data-delete-item','data-toggle-item','data-toggle','data-delete'].some(a=>el.hasAttribute(a))){toast('이 여행은 보기 전용이에요.');return}if(el.hasAttribute('data-refresh-shared')){if(sharedDirty||sharedBusy){toast('저장이 끝난 다음 최신 정보를 확인해 주세요.');return}refreshSharedFromServer(collabId).then(()=>toast('공동 여행 서버 정보를 확인했어요.'));return}if(el.hasAttribute('data-retry-shared')){sharedSaveFailed=false;scheduleSharedSave();toast('공동 여행 저장을 다시 시도해요.');return}if(el.hasAttribute('data-discard-shared')){if(!confirm('저장하지 못한 변경 사항을 취소하고 마지막 클라우드 저장 상태로 돌아갈까요?'))return;sharedTrip=sharedClone(sharedBase);sharedDirty=false;sharedBusy=false;sharedSaveFailed=false;sharedEditVersion++;clearTimeout(sharedTimer);render();return}if(el.hasAttribute('data-export-shared')){exportSharedData();return}if(el.hasAttribute('data-edit-stay')){stayForm(el.dataset.editStay);return}if(el.hasAttribute('data-delete-stay')){const t=selected(detailId);if(confirm('이 숙소를 삭제할까요?')){t.stays=t.stays.filter(x=>x.id!==el.dataset.deleteStay);save();detail()}return}if(el.hasAttribute('data-add-stay')){stayForm();return}if(el.hasAttribute('data-edit-transport')){transportForm(el.dataset.editTransport);return}if(el.hasAttribute('data-delete-transport')){const t=selected(detailId);if(confirm('이 교통편을 삭제할까요?')){t.transportBookings=t.transportBookings.filter(x=>x.id!==el.dataset.deleteTransport);save();detail()}return}if(el.hasAttribute('data-add-transport')){transportForm();return}if(el.hasAttribute('data-guest-login')){accountModal('login');return}if(el.hasAttribute('data-guest-signup')){accountModal('signup');return}if(el.hasAttribute('data-phrase-category')){phraseCategory=el.dataset.phraseCategory;detail();return}if(el.hasAttribute('data-copy-phrase')){const p=MOA_PHRASE_GUIDES[phraseLocale(selected(detailId))]?.phrases[Number(el.dataset.copyPhrase)];if(p){navigator.clipboard?.writeText(p[2]).then(()=>toast('현지어 문장을 복사했어요.')).catch(()=>prompt('문장을 복사해 주세요.',p[2]))}return}if(el.hasAttribute('data-speak-phrase')){const guide=MOA_PHRASE_GUIDES[phraseLocale(selected(detailId))];const p=guide?.phrases[Number(el.dataset.speakPhrase)];if(p&&'speechSynthesis' in window){speechSynthesis.cancel();const msg=new SpeechSynthesisUtterance(p[2]);msg.lang=guide.locale;msg.rate=.83;speechSynthesis.speak(msg)}else toast('이 기기에서는 발음 재생을 사용할 수 없어요.');return}if(el.hasAttribute('data-account')){accountModal();return}if(el.hasAttribute('data-admin-open')){if(adminAuthorized){closeModal();nav('admin');loadAdminMetrics()}else toast('관리자 권한이 확인되지 않았어요.');return}if(el.hasAttribute('data-admin-refresh')){checkAdminAccess().then(()=>loadAdminMetrics());return}if(el.hasAttribute('data-share-trip')){shareTripModal();return}if(el.hasAttribute('data-start-collab')){addTraveler();return}if(el.hasAttribute('data-add-traveler')){if(collabId){collabInvite();return}addTraveler();return}if(el.hasAttribute('data-collab-list')){showCollabList();return}if(el.hasAttribute('data-hide-owned-collab')){removeSharedFromMyList(el.dataset.hideOwnedCollab,el.dataset.sourceTrip);return}if(el.hasAttribute('data-retry-personal')){if(cloudUser&&userVerified())bootstrapPersonalCloud(cloudUser);return}if(el.hasAttribute('data-show-trash')){showTripTrash=!showTripTrash;dashboard();return}if(el.hasAttribute('data-hide-trash')){showTripTrash=false;dashboard();return}if(el.hasAttribute('data-restore-trip')){updateTripTrash(el.dataset.restoreTrip,'restore');return}if(el.hasAttribute('data-purge-trip')){updateTripTrash(el.dataset.purgeTrip,'purge');return}if(el.hasAttribute('data-delete-trip')){deleteDashboardTrip(el.dataset.deleteTrip);return}if(el.hasAttribute('data-hide-collab')){hideInvitedCollab(el.dataset.hideCollab);return}if(el.hasAttribute('data-open-collab')){if(!userVerified()){accountModal();return}openCollab(el.dataset.openCollab);return}if(el.hasAttribute('data-collab-invite')){collabInvite();return}if(el.hasAttribute('data-collab-members')){collabMembers();return}if(el.hasAttribute('data-collab-add')){collabStopForm();return}if(el.hasAttribute('data-collab-edit')){collabStopForm(el.dataset.collabEdit);return}if(el.hasAttribute('data-collab-delete')){deleteCollabStop(el.dataset.collabDelete);return}if(el.hasAttribute('data-collab-leave')){leaveCollab();nav('dashboard');return}if(el.hasAttribute('data-step-entry')){const value=el.dataset.stepEntry,cut=value.lastIndexOf(':');stepItinerary(value.slice(0,cut),Number(value.slice(cut+1)));return}if(el.hasAttribute('data-nav')){nav(el.dataset.nav);return}if(el.hasAttribute('data-create')||el.id==='topCreate'){formTrip();return}if(el.hasAttribute('data-filter')){filter=el.dataset.filter;render();return}if(el.hasAttribute('data-detail')){if(!userVerified()){accountModal();return}if(!personalReady){toast('서버 연결 후 여행을 열 수 있어요.');return}leaveCollab();detailId=el.dataset.detail;detailDay=0;plannerTab='schedule';plannerMode='plan';render();window.scrollTo(0,0);return}if(el.hasAttribute('data-day')){detailDay=Number(el.dataset.day);render();return}if(el.hasAttribute('data-close')){closeModal();return}if(el.hasAttribute('data-edit')){formTrip(selected(detailId));return}if(el.hasAttribute('data-mode')){plannerMode=el.dataset.mode;if(plannerMode==='travel'){const t=selected(detailId);if(t){const now=new Date(),iso=[now.getFullYear(),String(now.getMonth()+1).padStart(2,'0'),String(now.getDate()).padStart(2,'0')].join('-');for(let i=0;i<days(t);i++)if(isoForDay(t,i)===iso){detailDay=i;break}}}render();return}if(el.hasAttribute('data-planner-tab')){plannerTab=el.dataset.plannerTab;phraseCategory='전체';shoppingMemberFilter='all';expenseMemberFilter='all';render();return}if(el.hasAttribute('data-locate-stop')){formStop(el.dataset.locateStop);document.getElementById('geoSearch')?.focus();return}if(el.hasAttribute('data-edit-day-theme')){editDayTheme();return}if(el.hasAttribute('data-edit-leg')){editTravelLeg(el.dataset.editLeg);return}if(el.hasAttribute('data-edit-stop')){formStop(el.dataset.editStop);return}if(el.hasAttribute('data-done-stop')){const t=selected(detailId),s=t?.stops.find(x=>x.id===el.dataset.doneStop);if(s){s.done=!s.done;if(save())detail()}return}if(el.hasAttribute('data-map-locate')){mapLocationPicker(el.dataset.mapLocate);return}if(el.hasAttribute('data-travel-map-item')){focusTravelMapItem(el.dataset.travelMapItem);return}if(el.hasAttribute('data-route-map')){openDayRoute();return}if(el.hasAttribute('data-map')){const s=selected(detailId)?.stops.find(x=>x.id===el.dataset.map);if(s?.address){window.open('https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(s.address),'_blank','noopener,noreferrer')}return}if(el.hasAttribute('data-travel-jump')){
+document.addEventListener('click',e=>{const el=e.target.closest('button');if(!el)return;if(collabId&&collabRole==='viewer'&&['data-edit','data-edit-leg','data-edit-day-theme','data-add-stop','data-edit-stop','data-delete-stop','data-done-stop','data-step-entry','data-add-stay','data-edit-stay','data-delete-stay','data-add-transport','data-edit-transport','data-delete-transport','data-add-item','data-edit-item','data-delete-item','data-toggle-item','data-toggle','data-delete'].some(a=>el.hasAttribute(a))){toast('이 여행은 보기 전용이에요.');return}if(el.hasAttribute('data-refresh-shared')){if(sharedDirty||sharedBusy){toast('저장이 끝난 다음 최신 정보를 확인해 주세요.');return}refreshSharedFromServer(collabId).then(()=>toast('공동 여행 서버 정보를 확인했어요.'));return}if(el.hasAttribute('data-retry-shared')){sharedSaveFailed=false;scheduleSharedSave();toast('공동 여행 저장을 다시 시도해요.');return}if(el.hasAttribute('data-discard-shared')){if(!confirm('저장하지 못한 변경 사항을 취소하고 마지막 클라우드 저장 상태로 돌아갈까요?'))return;sharedTrip=sharedClone(sharedBase);sharedDirty=false;sharedBusy=false;sharedSaveFailed=false;sharedEditVersion++;clearTimeout(sharedTimer);render();return}if(el.hasAttribute('data-export-shared')){exportSharedData();return}if(el.hasAttribute('data-edit-stay')){stayForm(el.dataset.editStay);return}if(el.hasAttribute('data-delete-stay')){const t=selected(detailId);if(confirm('이 숙소를 삭제할까요?')){t.stays=t.stays.filter(x=>x.id!==el.dataset.deleteStay);save();detail()}return}if(el.hasAttribute('data-add-stay')){stayForm();return}if(el.hasAttribute('data-edit-transport')){transportForm(el.dataset.editTransport);return}if(el.hasAttribute('data-delete-transport')){const t=selected(detailId);if(confirm('이 교통편을 삭제할까요?')){t.transportBookings=t.transportBookings.filter(x=>x.id!==el.dataset.deleteTransport);save();detail()}return}if(el.hasAttribute('data-add-transport')){transportForm();return}if(el.hasAttribute('data-guest-login')){accountModal('login');return}if(el.hasAttribute('data-guest-signup')){accountModal('signup');return}if(el.hasAttribute('data-phrase-category')){phraseCategory=el.dataset.phraseCategory;detail();return}if(el.hasAttribute('data-copy-phrase')){const p=MOA_PHRASE_GUIDES[phraseLocale(selected(detailId))]?.phrases[Number(el.dataset.copyPhrase)];if(p){navigator.clipboard?.writeText(p[2]).then(()=>toast('현지어 문장을 복사했어요.')).catch(()=>prompt('문장을 복사해 주세요.',p[2]))}return}if(el.hasAttribute('data-speak-phrase')){const guide=MOA_PHRASE_GUIDES[phraseLocale(selected(detailId))];const p=guide?.phrases[Number(el.dataset.speakPhrase)];if(p&&'speechSynthesis' in window){speechSynthesis.cancel();const msg=new SpeechSynthesisUtterance(p[2]);msg.lang=guide.locale;msg.rate=.83;speechSynthesis.speak(msg)}else toast('이 기기에서는 발음 재생을 사용할 수 없어요.');return}if(el.hasAttribute('data-account')){accountModal();return}if(el.hasAttribute('data-admin-open')){if(adminAuthorized){closeModal();nav('admin');loadAdminMetrics()}else toast('관리자 권한이 확인되지 않았어요.');return}if(el.hasAttribute('data-admin-refresh')){checkAdminAccess().then(()=>loadAdminMetrics());return}if(el.hasAttribute('data-share-trip')){shareTripModal();return}if(el.hasAttribute('data-start-collab')){addTraveler();return}if(el.hasAttribute('data-add-traveler')){if(collabId){collabInvite();return}addTraveler();return}if(el.hasAttribute('data-collab-list')){showCollabList();return}if(el.hasAttribute('data-hide-owned-collab')){removeSharedFromMyList(el.dataset.hideOwnedCollab,el.dataset.sourceTrip);return}if(el.hasAttribute('data-retry-personal')){if(cloudUser&&userVerified())bootstrapPersonalCloud(cloudUser);return}if(el.hasAttribute('data-show-trash')){showTripTrash=!showTripTrash;dashboard();return}if(el.hasAttribute('data-hide-trash')){showTripTrash=false;dashboard();return}if(el.hasAttribute('data-restore-trip')){updateTripTrash(el.dataset.restoreTrip,'restore');return}if(el.hasAttribute('data-purge-trip')){updateTripTrash(el.dataset.purgeTrip,'purge');return}if(el.hasAttribute('data-delete-trip')){deleteDashboardTrip(el.dataset.deleteTrip);return}if(el.hasAttribute('data-hide-collab')){hideInvitedCollab(el.dataset.hideCollab);return}if(el.hasAttribute('data-open-collab')){if(!userVerified()){accountModal();return}openCollab(el.dataset.openCollab);return}if(el.hasAttribute('data-collab-invite')){collabInvite();return}if(el.hasAttribute('data-collab-members')){collabMembers();return}if(el.hasAttribute('data-collab-add')){collabStopForm();return}if(el.hasAttribute('data-collab-edit')){collabStopForm(el.dataset.collabEdit);return}if(el.hasAttribute('data-collab-delete')){deleteCollabStop(el.dataset.collabDelete);return}if(el.hasAttribute('data-collab-leave')){leaveCollab();nav('dashboard');return}if(el.hasAttribute('data-step-entry')){const value=el.dataset.stepEntry,cut=value.lastIndexOf(':');stepItinerary(value.slice(0,cut),Number(value.slice(cut+1)));return}if(el.hasAttribute('data-nav')){nav(el.dataset.nav);return}if(el.hasAttribute('data-create')||el.id==='topCreate'){formTrip();return}if(el.hasAttribute('data-filter')){filter=el.dataset.filter;render();return}if(el.hasAttribute('data-detail')){if(!userVerified()){accountModal();return}if(!personalReady){toast('서버 연결 후 여행을 열 수 있어요.');return}leaveCollab();detailId=el.dataset.detail;detailDay=0;plannerTab='schedule';plannerMode='plan';render();window.scrollTo(0,0);return}if(el.hasAttribute('data-day')){detailDay=Number(el.dataset.day);render();return}if(el.hasAttribute('data-close')){closeModal();return}if(el.hasAttribute('data-edit')){formTrip(selected(detailId));return}if(el.hasAttribute('data-mode')){plannerMode=el.dataset.mode;if(plannerMode==='travel'){const t=selected(detailId);if(t){const now=new Date(),iso=[now.getFullYear(),String(now.getMonth()+1).padStart(2,'0'),String(now.getDate()).padStart(2,'0')].join('-');for(let i=0;i<days(t);i++)if(isoForDay(t,i)===iso){detailDay=i;break}}}render();return}if(el.hasAttribute('data-planner-tab')){plannerTab=el.dataset.plannerTab;phraseCategory='전체';shoppingMemberFilter='all';expenseMemberFilter='all';render();return}if(el.hasAttribute('data-locate-stop')){formStop(el.dataset.locateStop);document.getElementById('geoSearch')?.focus();return}if(el.hasAttribute('data-edit-day-theme')){editDayTheme();return}if(el.hasAttribute('data-edit-leg')){editTravelLeg(el.dataset.editLeg);return}if(el.hasAttribute('data-edit-stop')){formStop(el.dataset.editStop);return}if(el.hasAttribute('data-done-stop')){const t=selected(detailId),s=t?.stops.find(x=>x.id===el.dataset.doneStop);if(s){s.done=!s.done;if(save())detail()}return}if(el.hasAttribute('data-auto-locate-day')){moaAutoLocateDay();return}if(el.hasAttribute('data-map-locate')){mapLocationPicker(el.dataset.mapLocate);return}if(el.hasAttribute('data-travel-map-item')){focusTravelMapItem(el.dataset.travelMapItem);return}if(el.hasAttribute('data-route-map')){openDayRoute();return}if(el.hasAttribute('data-map')){const s=selected(detailId)?.stops.find(x=>x.id===el.dataset.map);if(s?.address){window.open('https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(s.address),'_blank','noopener,noreferrer')}return}if(el.hasAttribute('data-travel-jump')){
  const id=el.dataset.travelJump,section=document.getElementById(id);
  if(id==='travelExpenseSection')section?.querySelector('details')?.setAttribute('open','');
  section?.scrollIntoView({behavior:'smooth',block:'start'});return
