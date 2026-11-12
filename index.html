@@ -1205,6 +1205,7 @@ async function moaAutoLocateDay(){
  if(!entries.length){toast('지도 위치를 모두 확인했어요.');return}
  moaAutoLocationBusy=true;if(button)button.disabled=true;
  let linked=0,ambiguous=0,failed=0;
+ const changes=[];
  // Small user-triggered batch: public search servers cannot be used for unlimited bulk lookup.
  const batch=entries.slice(0,8);
  const tripKey=detailId,dayKey=detailDay;
@@ -1222,12 +1223,23 @@ async function moaAutoLocateDay(){
     if(!current||moaUsableLocation(current,trip))continue;
     const oldLat=current.lat,oldLon=current.lon;
     current.lat=best.lat;current.lon=best.lon;
-    if(!save()){current.lat=oldLat;current.lon=oldLon;failed++;break}
+    changes.push({current,oldLat,oldLon});
     linked++;
    }catch(e){console.warn('MOA 위치 자동 검색 실패',e);failed++}
    if(i<batch.length-1)await new Promise(resolve=>setTimeout(resolve,1100));
   }
  }finally{
+  if(changes.length){
+   if(detailId===tripKey&&detailDay===dayKey){
+    if(!save()){
+     changes.forEach(({current,oldLat,oldLon})=>{current.lat=oldLat;current.lon=oldLon});
+     failed+=changes.length;linked=0;
+    }
+   }else{
+    changes.forEach(({current,oldLat,oldLon})=>{current.lat=oldLat;current.lon=oldLon});
+    linked=0;
+   }
+  }
   moaAutoLocationBusy=false;
   if(detailId===tripKey&&detailDay===dayKey){
    detail();
