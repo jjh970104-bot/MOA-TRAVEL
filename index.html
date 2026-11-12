@@ -433,6 +433,10 @@
 
 @media(max-width:600px){.v212-quick-spend input,.v212-quick-spend select{font-size:16px!important}}
 .v212-expensedate{display:block;color:#93a397;font-size:10px;margin:2px 0}
+
+.tripgrid>*{min-width:0;max-width:100%;box-sizing:border-box}
+@media(max-width:550px){.newtripCard{min-height:175px}.pagehead h1{font-size:clamp(24px,6vw,30px)}.shell{overflow-x:clip}.v212-find input{font-size:16px}}
+@media(max-width:350px){.v212-find{grid-template-columns:minmax(0,1fr)}}
 </style>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/><script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script><script defer src="https://www.gstatic.com/firebasejs/13.2.0/firebase-app-compat.js"></script><script defer src="https://www.gstatic.com/firebasejs/13.2.0/firebase-auth-compat.js"></script><script defer src="https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore-compat.js"></script><script defer src="firebase-config.js"></script></head>
 <body>
@@ -523,6 +527,18 @@ function dashboard(){
  (trash.length?trash.map(t=>'<div class="v212-trash-row"><div><strong>'+esc(t.title)+'</strong><small>'+esc(t.destination||'')+' · '+esc(String(t.trashedAt).slice(0,10))+'</small></div><button class="secondary mini" data-restore-trip="'+esc(t.id)+'">복구</button><button class="v211-delete" data-purge-trip="'+esc(t.id)+'">영구 삭제</button></div>').join(''):'<div class="emptyMini">휴지통이 비어 있어요.</div>')+'</div>':'');
 }
 
+function renderTripSearchResults(){
+ const root=document.getElementById('tripResults');if(!root)return;
+ const active=trips.filter(t=>!deletedTrip(t));
+ const linked=new Set(active.map(t=>t.collabId).filter(Boolean));
+ for(const c of collabList)if(active.some(t=>c.sourceTripId===t.id))linked.add(c.id);
+ const invited=collabList.filter(c=>!linked.has(c.id));
+ const match=x=>(filter==='all'||(filter==='done'?x.status==='done':x.status!=='done'))&&(!tripSearch||[x.title,x.destination].some(v=>String(v||'').toLowerCase().includes(tripSearch.trim().toLowerCase())));
+ const sort=(a,b)=>tripSort==='title'?String(a.title||'').localeCompare(String(b.title||''),'ko'):tripSort==='latest'?String(b.updatedAt||b.createdAt||'').localeCompare(String(a.updatedAt||a.createdAt||'')):String(a.start||'9999').localeCompare(String(b.start||'9999'));
+ const rows=active.filter(match).sort(sort),shared=invited.filter(match).sort(sort);
+ root.innerHTML=(rows.length||shared.length?rows.map(card).join('')+shared.map(c=>'<article class="trip v23-invited"><div class="tripbody"><span class="badge">👥 함께하는 여행</span><h3>'+esc(c.title||'여행')+'</h3><p>📍 '+esc(c.destination||'')+'</p><div class="tripfoot"><span>초대받은 여행</span><button class="textbtn" data-open-collab="'+esc(c.id)+'">여행 열기 ↗</button></div><div class="v23-invited-actions"><button class="secondary mini" data-hide-collab="'+esc(c.id)+'">내 목록에서 삭제</button></div></div></article>').join(''):'<div class="empty"><h3>검색된 여행이 없어요</h3></div>')+
+ '<button class="newtripCard" data-create><span class="plus">＋</span><strong>새 여행 만들기</strong></button>';
+}
 async function updateTripTrash(id,action){
  if(!cloudUser||!userVerified()||!personalReady||!cloudActive){toast('내 여행 서버 연결 후 이용할 수 있어요.');return}
  const target=trips.find(t=>t.id===id);if(!target)return;
@@ -1987,7 +2003,7 @@ document.addEventListener('submit',e=>{
  detail();toast('오늘 지출을 기록했어요. 🌷');
 });
 document.addEventListener('submit',e=>{if(e.target?.id!=='quickExpenseForm')return;e.preventDefault();if(collabId&&collabRole==='viewer'){toast('보기 전용 여행이에요.');return}const form=e.target,t=selected(detailId);if(!t){toast('여행을 선택한 뒤 다시 시도해 주세요.');return}ensureTrip(t);const f=new FormData(form),name=String(f.get('name')||'').trim(),raw=String(f.get('amount')||'').trim(),amount=Number(raw),error=form.querySelector('#expenseError');const fail=message=>{error.textContent=message;error.hidden=false;toast(message)};if(!name)return fail('경비 항목을 입력해 주세요.');const currency=String(f.get('currency')||'KRW');if(raw===''||!Object.hasOwn(MOA_CURRENCIES,currency)||!expenseAmountValid(amount,currency))return fail('결제 통화와 금액을 확인해 주세요.');let payer;try{payer=payerFields(f,null)}catch(err){return fail(err.message)}const expense={id:uuid(),name,amount,currency,...payer,paid:f.has('paid'),done:false};t.expenses.push(expense);if(!save()){t.expenses.pop();return fail('저장에 실패했어요. 브라우저 저장 공간을 확인해 주세요.')}detail();toast(name+' 경비를 저장했어요! 🌼')});
-document.addEventListener('input',e=>{if(e.target?.id!=='tripSearch')return;const target=e.target;tripSearch=target.value;const pos=target.selectionStart;dashboard();const next=document.getElementById('tripSearch');if(next){next.focus();next.setSelectionRange(pos,pos)}});
+document.addEventListener('input',e=>{if(e.target?.id==='tripSearch'){tripSearch=e.target.value;renderTripSearchResults()}});
 document.addEventListener('change',e=>{if(e.target?.id==='tripSort'){tripSort=e.target.value;dashboard()}});
 document.addEventListener('change',e=>{if(e.target?.id!=='tripCurrency')return;if(collabId&&collabRole==='viewer'){toast('보기 전용 여행이에요.');render();return}const t=selected(detailId),currency=e.target.value;if(!t||!Object.hasOwn(MOA_CURRENCIES,currency))return;t.localCurrency=currency;if(save()){detail();toast('여행지 기본 통화를 변경했어요.')}});
 document.addEventListener('change',e=>{const el=e.target;if(!el.matches('input[data-toggle-item]'))return;if(collabId&&collabRole==='viewer'){toast('보기 전용 여행이에요.');render();return}const [k,id]=el.dataset.toggleItem.split(':'),t=selected(detailId),v=t?.[collectionKey(k)]?.find(x=>x.id===id);if(v){if(k==='shopping'&&!canEditShopping(v)){toast('내 쇼핑리스트만 체크할 수 있어요.');el.checked=!!v.done;return}v.done=el.checked;if(save())detail()}});
