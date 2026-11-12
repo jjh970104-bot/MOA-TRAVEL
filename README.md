@@ -1,5 +1,7 @@
 ## MOA V2.12 — Trip management, shopping owner separation and travel expenses (2026-11-12)
 
+Travel mode now auto-selects the current browser-local trip day when it falls within the travel dates; otherwise the previously selected day remains. This is a convenience default and not a destination-time-zone computation.
+
 - **My Trips:** Removed routine `여행 파일 가져오기` and `백업 내보내기` buttons. Added trip search (title/destination) and sorting by departure date, latest saved change, or Korean title. Search updates the cards without replacing the input, preserving the mobile keyboard. Fixed mobile card grid widths and reduced the new-trip tile height.
 - **Personal trip trash:** Personal-trip deletion from the card or detail marks the Firestore trip with `trashedAt` in a transaction instead of destroying it. Deleted trips are absent from the main cards and counts. Users can open **휴지통** to restore or permanently delete the trip. UID-scoped local backup updates only after Firebase confirms. There is no automatic 30-day purge yet; items remain recoverable until manually permanently deleted. This does not affect shared-trip cleanup, which remains per-user list removal without deleting shared canonical data.
 - **Daily highlights:** Trip schedule displays a daily summary with theme, first three confirmed stops, visit progress and count of expenses tagged to the date.
