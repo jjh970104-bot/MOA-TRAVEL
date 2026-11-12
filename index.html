@@ -605,8 +605,19 @@
   .v2-detail .v28-itinerary-card{border-radius:12px}
   #toastRoot .toast{position:fixed;top:auto;bottom:calc(105px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);width:max-content;max-width:min(90vw,340px);padding:9px 12px;font-size:12px;line-height:1.45;z-index:2000;pointer-events:none;box-shadow:0 5px 18px #10241929}
 }
+
+/* Admin member analytics – authenticated superadmin only */
+.moa-admin-members{border:1px solid var(--border);border-radius:16px;overflow:hidden;background:var(--paper)}
+.moa-admin-member{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;align-items:center;padding:12px 14px;border-bottom:1px solid var(--border)}
+.moa-admin-member:last-child{border-bottom:0}
+.moa-admin-member>div{display:grid;gap:5px;min-width:0}
+.moa-admin-member strong{overflow-wrap:anywhere;font-size:13px}
+.moa-admin-member small{color:var(--muted);font-size:11px}
+.moa-admin-auth{font-size:11px;background:#f7eee8;color:#a17c57;border-radius:999px;padding:4px 8px;justify-self:start}
+.moa-admin-auth.is-verified{color:#427655;background:#eaf4e9}
+@media(max-width:640px){.moa-admin-member{grid-template-columns:1fr;gap:8px;padding:11px}.moa-admin-member>div:last-child{display:flex;flex-wrap:wrap;align-items:center;gap:8px}}
 </style>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/><script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script><script defer src="https://www.gstatic.com/firebasejs/13.2.0/firebase-app-compat.js"></script><script defer src="https://www.gstatic.com/firebasejs/13.2.0/firebase-auth-compat.js"></script><script defer src="https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore-compat.js"></script><script defer src="firebase-config.js"></script></head>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/><script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script><script defer src="https://www.gstatic.com/firebasejs/13.2.0/firebase-app-compat.js"></script><script defer src="https://www.gstatic.com/firebasejs/13.2.0/firebase-auth-compat.js"></script><script defer src="https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore-compat.js"></script><script defer src="https://www.gstatic.com/firebasejs/13.2.0/firebase-functions-compat.js"></script><script defer src="firebase-config.js"></script></head>
 <body>
 <header class="topbar"><div class="shell toprow"><button class="brand" data-nav="home"><span class="brandmark">✿</span><span class="brandtext">moa<span style="color:#8cb397">.</span></span></button><nav class="topnav"><button class="navlink active" data-nav="home">홈</button><button class="navlink" data-nav="about">모아 알아보기</button><button class="navlink" data-nav="dashboard">내 여행</button><button class="navlink" data-nav="explore">여행 탐색</button><button class="navlink" data-nav="community">커뮤니티</button></nav><div class="topactions"><button class="secondary" id="accountButton" data-account>로그인 / 회원가입</button><button class="primary" id="topCreate">＋ 여행 만들기</button></div></div></header>
 <main id="app" class="shell"></main>
@@ -802,35 +813,41 @@ async function checkAdminAccess(){
   }
 }
 function adminDashboard(){
-  if(!adminAuthorized||!cloudUser||!userVerified()){
-    page='dashboard';dashboard();return;
-  }
+  if(!adminAuthorized||!cloudUser||!userVerified()){page='dashboard';dashboard();return}
   const stats=adminMetrics;
-  const field=(key)=>stats&&Number.isFinite(Number(stats[key]))?money(stats[key]):'집계 전';
+  const field=key=>stats&&Number.isFinite(Number(stats[key]))?Number(stats[key]).toLocaleString('ko-KR'):'—';
+  const updated=stats?.updatedAt?new Date(stats.updatedAt):null;
+  const dateFmt=iso=>{if(!iso)return '기록 없음';const d=new Date(iso);return Number.isNaN(d.getTime())?'기록 없음':d.toLocaleString('ko-KR',{timeZone:'Asia/Seoul',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'})};
+  const cards=[
+    ['전체 가입자','registeredUsers'],['오늘 가입','todayJoined'],['최근 7일 가입','last7Days'],
+    ['이메일 인증 완료','verifiedUsers'],['최근 30일 로그인','active30Days']
+  ];
   app.innerHTML='<section class="v22-admin">'+
-    '<div class="v22-admin-head"><div><span class="eyebrow">MOA · ADMIN</span><h1>🛡️ 모아 관리자 센터</h1><p>운영 현황을 확인하는 관리자 전용 공간이에요. 회원의 비공개 여행이나 경비에는 접근하지 않아요.</p></div><button class="secondary mini" data-admin-refresh>↻ 상태 새로고침</button></div>'+
-    '<div class="cloudNotice">✅ 관리자 권한 확인 완료 · '+esc(cloudUser.displayName||'모아 관리자')+'</div>'+
-    '<h2>서비스 전체 통계</h2><div class="v22-admin-grid">'+
-    '<div class="v22-admin-stat"><span>등록 회원</span><strong>'+field('registeredUsers')+'</strong></div>'+
-    '<div class="v22-admin-stat"><span>생성된 여행</span><strong>'+field('createdTrips')+'</strong></div>'+
-    '<div class="v22-admin-stat"><span>공동 여행</span><strong>'+field('collaborativeTrips')+'</strong></div>'+
-    '<div class="v22-admin-stat"><span>최종 집계</span><strong>'+esc(stats?.updatedAt?.toDate?.()?.toLocaleString('ko-KR')||'집계 전')+'</strong></div></div>'+
-    '<p class="apiHelp">전체 회원 및 여행 통계는 관리자용 서버 집계가 있어야 정확하게 표시할 수 있어요. 현재 이 화면은 임의의 숫자를 표시하지 않으며, 집계 문서가 없으면 「집계 전」으로 보여요.</p>'+
-    '<h2 style="margin-top:25px">내 계정 연결 상태</h2><div class="v22-admin-grid">'+
-    '<div class="v22-admin-stat"><span>인증 상태</span><strong>이메일 인증 완료</strong></div>'+
-    '<div class="v22-admin-stat"><span>브라우저 내 개인 여행</span><strong>'+trips.length+'개</strong></div>'+
-    '<div class="v22-admin-stat"><span>참여 중인 공동 여행</span><strong>'+collabList.length+'개</strong></div>'+
-    '<div class="v22-admin-stat"><span>개인 여행 클라우드 자동 저장</span><strong>'+(cloudActive?'사용 중':'꺼짐')+'</strong></div></div>'+
-    '<p class="apiHelp">아래 내 계정 지표는 전체 서비스 통계가 아니며, 현재 브라우저·계정 기준이에요.</p>'+
+    '<div class="v22-admin-head"><div><span class="eyebrow">MOA · ADMIN</span><h1>🛡️ 회원 현황</h1><p>Firebase Authentication 기준 · 한국 시간으로 집계합니다.</p></div><button class="secondary mini" data-admin-refresh>↻ 새로고침</button></div>'+
+    '<div class="cloudNotice">✅ 관리자 계정 · '+esc(cloudUser.displayName||'모아 관리자')+'</div>'+
+    '<div class="v22-admin-grid">'+cards.map(v=>'<div class="v22-admin-stat"><span>'+v[0]+'</span><strong>'+field(v[1])+'</strong></div>').join('')+'</div>'+
+    '<p class="apiHelp">'+(stats?'최근 집계: '+esc(dateFmt(stats.updatedAt))+' · 최근 로그인은 30일 내 로그인한 회원 수예요.':(adminMetricsUnavailable?'⚠️ 회원 통계를 불러오지 못했어요. Firebase Functions 배포 및 관리자 권한을 확인해 주세요.':'통계를 조회하는 중이에요. 서버 배포 전에는 숫자가 표시되지 않아요.'))+'</p>'+
+    '<h2 style="margin-top:20px">최근 가입 회원</h2>'+
+    '<p class="tinyHint">최신 20명만 표시해요. 이메일은 일부 가려서 보여요.</p>'+
+    (stats?.recentMembers?.length?'<div class="moa-admin-members">'+stats.recentMembers.map(m=>'<div class="moa-admin-member"><div><strong>'+esc(m.email||'이메일 없음')+'</strong><small>가입 '+esc(dateFmt(m.joinedAt))+'</small></div><div><span class="moa-admin-auth '+(m.verified?'is-verified':'')+'">'+(m.verified?'✓ 이메일 인증':'인증 대기')+'</span><small>마지막 로그인 '+esc(dateFmt(m.lastLoginAt))+'</small></div></div>').join('')+'</div>':
+    '<div class="emptyMini">'+(stats?'표시할 회원이 없어요.':'실제 회원 집계가 준비되면 여기에 표시돼요.')+'</div>')+
     '<div class="actionrow" style="margin-top:20px"><button class="secondary" data-nav="dashboard">← 내 여행으로 돌아가기</button></div></section>';
 }
 async function loadAdminMetrics(){
-  if(!adminAuthorized||!cloudUser)return;
+  if(!adminAuthorized||!cloudUser||!userVerified())return;
+  adminMetrics=null;adminMetricsUnavailable=false;
+  if(page==='admin')adminDashboard();
   try{
-    const snap=await setupCloud().db.collection('adminMetrics').doc('overview').get({source:'server'});
-    if(!adminAuthorized)return;
-    adminMetrics=snap.exists?snap.data():null;adminMetricsUnavailable=!snap.exists;
-  }catch(e){adminMetrics=null;adminMetricsUnavailable=true;console.warn('관리자 통계 읽기',e)}
+    if(typeof firebase==='undefined'||typeof firebase.functions!=='function')throw Error('Firebase Functions 라이브러리를 불러오지 못했어요.');
+    const callable=firebase.app().functions('asia-northeast3').httpsCallable('getAdminMemberOverview');
+    const result=await callable({});
+    if(!adminAuthorized||!cloudUser)return;
+    if(!result?.data||typeof result.data.registeredUsers!=='number')throw Error('집계 응답을 확인할 수 없어요.');
+    adminMetrics=result.data;adminMetricsUnavailable=false;
+  }catch(e){
+    adminMetrics=null;adminMetricsUnavailable=true;
+    console.warn('MOA 회원 통계 호출 실패',e);
+  }
   if(page==='admin')adminDashboard();
 }
 function coming(kind){const isExplore=kind==='explore';app.innerHTML=`<section class="coming"><div class="large">${isExplore?'🗺️':'💌'}</div><span class="eyebrow">Coming in the next version</span><h1>${isExplore?'다른 여행자의 일정을 발견하는 곳':'여행 이야기가 모이는 곳'}</h1><p>${isExplore?'도시·여행 스타일별로 일정을 찾아보고 내 여행으로 복사하는 기능을 준비 중이에요.':'사진, 후기, 좋아요, 댓글로 여행 꿀팁을 공유하는 공간을 준비 중이에요.'}<br>현재 모아는 개인 여행 관리와 초대한 여행자 간 공동 편집 기능을 개발 중이에요.</p><button class="primary" data-nav="dashboard">내 여행으로 돌아가기</button></section>`}
