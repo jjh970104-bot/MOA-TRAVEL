@@ -1,3 +1,12 @@
+## MOA V2.11.1 — Remove disruptive legacy-cache recovery prompts (2026-11-12)
+
+- **Signed-in travel is automatically retrieved from Firebase** (`users/{uid}/data/travel`). The user does not have to choose browser-versus-cloud storage, and the former `confirm(...기기 내용 복구...)` and `confirm(...과거 방식...)` prompts are removed from the sign-in bootstrap path.
+- When the account has an existing server travel doc, it is the canonical source. A different browser UID-scoped snapshot is archived (without overwriting an existing archive) under `moa-personal-recovery-{uid}-v210` before the current local view is updated. Old unscoped browser data remains in its old localStorage key without automatically attaching it to the wrong account. This avoids accidentally resurrecting trips deleted on another device or importing another user's trips.
+- If a new account has no server doc and an existing matching UID-scoped local snapshot exists, that snapshot seeds the account doc without prompting.
+- Optional **내 계정 → 데이터 관리 → 고급 복구 도구 → 이전 기기 여행 백업** downloads an archived or old browser-local trip JSON, which the user can inspect and *explicitly* import if needed. This is a manual recovery tool, not part of everyday usage.
+- Initial server fetching is an invisible authentication/data-loading operation, not a separate user activation or required step. A genuinely new device must have network connectivity to fetch the account's data. If Firebase fails, cached trips can still be listed read-only; no invisible destructive server overwrite.
+- Inline JavaScript syntax passed; mocked bootstrap scenarios confirmed server-authoritative display without writes and local-only new-account seeding. Live authentication/browser verification pending.
+
 ## MOA V2.11 — Trip list deletion and cloud usability (2026-11-12)
 
 - Existing user accounts **do not need to opt into cloud storage**: V2.10 already introduced automatic verified-user cloud loading and saves to `users/{uid}/data/travel`. Same account on another device fetches server travel docs. This is distinct from collaboration data stored in `collabTrips`.
