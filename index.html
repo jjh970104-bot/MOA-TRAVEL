@@ -905,7 +905,7 @@ function formStop(editId){
  const x=editId?t.stops.find(v=>v.id===editId):null,expense=linkedStopExpense(t,x);
  const cost=expense?.amount??(x?.cost!==undefined&&x.cost!==''?x.cost:'');
  const currency=expense?.currency||x?.currency||localCurrency(t);
- const status=x?.candidate?'후보':x?.status==='확정'?'확정':'계획';
+ const status=x?.candidate?'후보':x?.status==='확정'||(t.importedFrom==='munggu-nyangi-shanghai-v14-backup'&&String(x?.note||'').includes('기존 플래너 상태: 확정'))?'확정':'계획';
  placeSelected=x?.lat!=null&&x?.lon!=null?{lat:Number(x.lat),lon:Number(x.lon),formatted:x.address,name:x.name}:null;
  const options=(values,selected)=>values.map(v=>'<option value="'+esc(v)+'" '+(v===selected?'selected':'')+'>'+esc(v)+'</option>').join('');
  modal('<form id="stopForm"><div class="modalhead"><h2>'+(x?'✏️ 일정 수정':'📍 장소 추가')+'</h2><button type="button" class="iconbtn" data-close aria-label="닫기">×</button></div>'+
