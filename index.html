@@ -1173,7 +1173,7 @@ function accountModal(mode='login'){
       '<details class="v25-account-settings"><summary>데이터 관리 <span>⌄</span></summary><div class="v25-account-settings-content">'+
       '<p class="v25-storage-status">'+(cloudActive?'☁️ 내 여행 클라우드 자동 저장 사용 중':'🌱 이 브라우저에 개인 여행 저장 중')+'</p>'+
       '<p>로그인한 개인 여행은 계정으로 자동 동기화돼요. 이전 기기에서 저장한 여행을 복구할 때만 아래 기능을 사용하세요.</p>'+
-      '<details class="v210-advanced-recovery"><summary>고급 복구 도구</summary><div class="v25-account-cloud-actions"><button class="secondary mini" type="button" id="cloudLoad" '+(!verified?'disabled':'')+'>서버 여행 다시 불러오기</button><button class="secondary mini" type="button" id="cloudUpload" '+(!verified?'disabled':'')+'>현재 기기 여행 업로드</button></div></details>'+
+      '<details class="v210-advanced-recovery"><summary>고급 복구 도구</summary><div class="v25-account-cloud-actions"><button class="secondary mini" type="button" id="downloadOldTripBackup">이전 기기 여행 백업</button><button class="secondary mini" type="button" id="cloudLoad" '+(!verified?'disabled':'')+'>서버 여행 다시 불러오기</button><button class="secondary mini" type="button" id="cloudUpload" '+(!verified?'disabled':'')+'>현재 기기 여행 업로드</button></div></details>'+
       '<p class="v25-storage-warning">고급 복구는 기존 여행을 교체할 수 있어요. 먼저 내 여행에서 백업을 받아주세요.</p>'+
       '</div></details>'+
       '<button class="secondary v25-logout" type="button" id="cloudLogout">로그아웃</button>');
@@ -1181,6 +1181,18 @@ function accountModal(mode='login'){
       document.getElementById('resendVerify').onclick=async()=>{try{await cloudUser.sendEmailVerification();toast('인증 메일을 다시 보냈어요. 받은편지함을 확인해 주세요.')}catch(e){toast(authError(e))}};
       document.getElementById('checkVerify').onclick=async()=>{try{await cloudUser.reload();await cloudUser.getIdToken(true);cloudUser=setupCloud().auth.currentUser;accountModal();if(userVerified()&&pendingCollabToken)openCollabInvite(pendingCollabToken);else if(userVerified()&&pendingShareId)openSharedTrip(pendingShareId);if(userVerified()){bootstrapPersonalCloud(cloudUser);toast('인증이 확인됐어요! 🌷')}else toast('아직 인증되지 않았어요. 이메일의 링크를 확인해 주세요.')}catch(e){toast(authError(e))}};
     }
+    document.getElementById('downloadOldTripBackup').onclick=()=>{
+      const recovery=localStorage.getItem('moa-personal-recovery-'+cloudUser.uid+'-v210');
+      const legacy=localStorage.getItem(STORAGE_KEY);
+      const data=recovery||legacy;
+      if(!data){toast('이 기기에는 이전 여행 백업이 없어요.');return}
+      try{
+        const rows=JSON.parse(data);if(!Array.isArray(rows))throw Error('백업 형식 오류');
+        const file=new Blob([JSON.stringify({trips:rows,importMode:'append'},null,2)],{type:'application/json'});
+        const url=URL.createObjectURL(file),a=document.createElement('a');a.href=url;a.download='MOA_이전기기_여행_백업.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),2000);
+        toast('이전 기기 여행 백업을 다운로드했어요. 필요하면 여행 파일 가져오기로 추가할 수 있어요.');
+      }catch(e){toast('이전 여행 백업을 읽을 수 없어요.')}
+    };
     document.getElementById('cloudLoad').onclick=cloudLoad;
     document.getElementById('cloudUpload').onclick=cloudUpload;
     document.getElementById('cloudLogout').onclick=cloudLogout;
@@ -1294,8 +1306,8 @@ async function bootstrapPersonalCloud(user){
    if(snap.exists&&stored&&JSON.stringify(scoped)!==JSON.stringify(remote)){
      const archiveKey='moa-personal-recovery-'+user.uid+'-v210';
      const previous=localStorage.getItem(archiveKey);
-     if(!previous||JSON.stringify(scoped)!==previous){
-       localStorage.setItem(archiveKey,JSON.stringify(scoped));
+     if(!previous){
+       try{localStorage.setItem(archiveKey,JSON.stringify(scoped))}catch(e){console.warn('과거 기기 백업 보관 실패',e)}
      }
    }
    // New accounts may have a UID-scoped backup from a previous interrupted upload.
