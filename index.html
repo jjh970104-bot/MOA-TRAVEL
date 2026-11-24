@@ -623,7 +623,7 @@
 <body>
 <header class="topbar"><div class="shell toprow"><button class="brand" data-nav="home"><span class="brandmark">✿</span><span class="brandtext">moa<span style="color:#8cb397">.</span></span></button><nav class="topnav"><button class="navlink active" data-nav="home">홈</button><button class="navlink" data-nav="about">모아 알아보기</button><button class="navlink" data-nav="dashboard">내 여행</button><button class="navlink" data-nav="explore">여행 탐색</button><button class="navlink" data-nav="community">커뮤니티</button></nav><div class="topactions"><button class="secondary" id="accountButton" data-account>로그인 / 회원가입</button><button class="primary" id="topCreate">＋ 여행 만들기</button></div></div></header>
 <main id="app" class="shell"></main>
-<footer class="footer"><div class="shell">© 2026 moa. · 여행의 순간을 모으다 <span style="float:right">V2.16.1 · 후보 일정 수정 오류 해결</span></div></footer>
+<footer class="footer"><div class="shell">© 2026 moa. · 여행의 순간을 모으다 <span style="float:right">V2.17 · 일정 날짜 이동</span></div></footer>
 <nav class="mobilebar"><button data-nav="home"><span>⌂</span>홈</button><button data-nav="dashboard"><span>▦</span>내 여행</button><button data-nav="explore"><span>⌕</span>탐색</button><button data-nav="community"><span>♡</span>커뮤니티</button></nav>
 <div id="modalRoot"></div><div id="toastRoot"></div>
 <script>
@@ -1710,9 +1710,10 @@ function stopExpenseSummary(t,stop){
  if(stop?.cost!==undefined&&stop.cost!==''&&Number.isFinite(Number(stop.cost))&&Number(stop.cost)>0)return money(stop.cost)+' '+(stop.currency||'KRW')+' · 기존 일정 비용';
  return '';
 }
-function candidateParentOptions(t,stop){
- return '<option value="">연결하지 않음 (독립 후보)</option>'+t.stops.filter(x=>Number(x.day)===detailDay&&x.id!==stop?.id&&!x.candidate).map(x=>'<option value="'+esc(x.id)+'" '+(resolvedCandidateParent(t,stop?.alternativeFor)===x.id?'selected':'')+'>'+esc(x.name)+'</option>').join('');
+function candidateParentOptions(t,stop,day=detailDay){
+ return '<option value="">연결하지 않음 (독립 후보)</option>'+t.stops.filter(x=>Number(x.day)===Number(day)&&x.id!==stop?.id&&!x.candidate).map(x=>'<option value="'+esc(x.id)+'" '+(resolvedCandidateParent(t,stop?.alternativeFor)===x.id?'selected':'')+'>'+esc(x.name)+'</option>').join('');
 }
+function moaStopDayOptions(t,selectedDay){return Array.from({length:days(t)},(_,d)=>'<option value="'+d+'" '+(Number(selectedDay)===d?'selected':'')+'>DAY '+(d+1)+' · '+esc(dayDateLabel(t,d))+'</option>').join('')}
 function syncStopExpense(t,stop,form){
  let existing=linkedStopExpense(t,stop);const raw=String(form.get('cost')||'').trim();
  if(!raw){if(existing)t.expenses=t.expenses.filter(e=>e.id!==existing.id);delete stop.expenseId;delete stop.cost;return}
@@ -1751,6 +1752,7 @@ function formStop(editId){
  modal('<form id="stopForm"><div class="modalhead"><h2>'+(x?'✏️ 일정 수정':'📍 장소 추가')+'</h2><button type="button" class="iconbtn" data-close aria-label="닫기">×</button></div>'+
  '<p class="muted tiny">'+esc(dayDateLabel(t,detailDay))+' · 장소·후보·비용을 한곳에서 기록해요.</p>'+
  '<div class="field"><label>장소 또는 일정 이름 *</label><input name="place" maxlength="90" required autocomplete="off" value="'+esc(x?.name||'')+'" placeholder="예: 상하이 디즈니랜드"><div id="moaAutoPlaceHints" class="moa-auto-place-hints" role="listbox" hidden></div><small class="tinyHint">장소를 입력하면 지도 위치를 추천해요. 정확한 장소를 선택해야 지도에 저장돼요.</small></div>'+
+ '<div class="field"><label for="stopMoveDay">📅 방문 날짜</label><select id="stopMoveDay" name="day">'+moaStopDayOptions(t,x?.day??detailDay)+'</select><small class="tinyHint">다른 날짜로 옮겨도 메모·현지어·비용은 유지돼요. 연결된 대체 후보는 함께 이동해요.</small></div>'+ 
  '<div class="formrow"><div class="field"><label>시간</label><input type="time" name="time" value="'+esc(x?.time||'')+'"></div><div class="field"><label>구분</label><select name="type">'+options(['관광','식사','카페','쇼핑','숙소','항공','이동','기타'],x?.type||'관광')+'</select></div></div>'+
  '<div class="formrow"><div class="field"><label>일정 상태</label><select name="status" id="stopStatus">'+options(['계획','확정','후보'],status)+'</select></div><div class="field" id="alternateForWrap" '+(status==='후보'?'':'hidden')+'><label>어떤 일정의 후보인가요?</label><select name="alternativeFor">'+candidateParentOptions(t,x)+'</select><small class="tinyHint">선택한 일정 아래 대체 후보로 표시돼요.</small></div></div>'+
  '<div class="formrow"><div class="field"><label>이 장소까지 이동수단</label><select name="transport">'+options(['','도보','지하철','버스','택시 / 디디','택시','기차','렌터카','기타'],x?.transport||x?.leg?.mode||'')+'</select></div><div class="field"><label>소요시간 (분)</label><input type="number" name="legMinutes" min="0" max="1440" step="1" placeholder="예: 20" value="'+esc(x?.leg?.minutes??'')+'"></div></div>'+
@@ -1822,30 +1824,57 @@ function formStop(editId){
  }
 
  document.getElementById('stopStatus')?.addEventListener('change',e=>{document.getElementById('alternateForWrap').hidden=e.target.value!=='후보'});
+ document.getElementById('stopMoveDay')?.addEventListener('change',e=>{
+  const parent=document.querySelector('#stopForm [name="alternativeFor"]');if(!parent)return;
+  const selectedId=parent.value;
+  parent.innerHTML=candidateParentOptions(t,x,Number(e.target.value));
+  if([...parent.options].some(option=>option.value===selectedId))parent.value=selectedId;
+  else parent.value='';
+ });
  document.getElementById('geoSearchButton')?.addEventListener('click',searchPlaces);
  document.getElementById('geoSearch')?.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();searchPlaces()}});
  document.getElementById('geoSettings')?.addEventListener('click',()=>{const val=prompt('Geoapify API Key를 입력해 주세요.',localStorage.getItem(MAP_KEY)||'');if(val!==null){localStorage.setItem(MAP_KEY,val.trim());toast('검색 설정을 저장했어요.')}});
  document.getElementById('stopForm').onsubmit=e=>{
   e.preventDefault();const f=new FormData(e.currentTarget),name=String(f.get('place')||'').trim();if(!name)return;
-  const state=String(f.get('status')||'계획'),selectedParent=String(f.get('alternativeFor')||''),alternativeFor=state==='후보'?(selectedParent||(x?.candidate&&x?.alternativeFor&&!t.stops.some(v=>v.id===x.alternativeFor)?x.alternativeFor:'')):'',legMinutes=String(f.get('legMinutes')||'').trim();
-  // Independent candidate stops are valid; editing a memo must never require linking a parent.
-  if(state==='후보'&&alternativeFor){const parent=t.stops.find(v=>v.id===alternativeFor);if(parent&&(parent.candidate||parent.id===x?.id||Number(parent.day)!==detailDay)){toast('연결할 원래 일정을 다시 선택해 주세요.');return}}
+  const targetDay=Number(f.get('day'));
+  if(!Number.isInteger(targetDay)||targetDay<0||targetDay>=days(t)){toast('여행 기간 안의 날짜를 선택해 주세요.');return}
+  const state=String(f.get('status')||'계획'),selectedParent=String(f.get('alternativeFor')||''),sameDay=Number(x?.day??detailDay)===targetDay,
+    alternativeFor=state==='후보'?(selectedParent||(sameDay&&x?.candidate&&x?.alternativeFor&&!t.stops.some(v=>v.id===x.alternativeFor)?x.alternativeFor:'')):'',legMinutes=String(f.get('legMinutes')||'').trim();
+  // Independent candidates can move freely. Connected candidates can only link to a stop on the selected date.
+  if(state==='후보'&&alternativeFor){const parent=t.stops.find(v=>v.id===resolvedCandidateParent(t,alternativeFor));if(parent&&(parent.candidate||parent.id===x?.id||Number(parent.day)!==targetDay)){toast('이동할 날짜의 원래 일정을 선택해 주세요.');return}}
   if(legMinutes&&(!Number.isInteger(Number(legMinutes))||Number(legMinutes)<0||Number(legMinutes)>1440)){toast('이동 시간을 확인해 주세요.');return}
   const raw=String(f.get('cost')||'').trim(),cur=String(f.get('currency')||'KRW');
   if(raw&&(!Object.hasOwn(MOA_CURRENCIES,cur)||!expenseAmountValid(Number(raw),cur))){toast('비용과 통화를 확인해 주세요.');return}
-  const current=x||{id:uuid(),day:detailDay,done:false,order:dayStops(t).length};
-  const before=JSON.parse(JSON.stringify(current)),expenseBefore=JSON.parse(JSON.stringify(t.expenses));
-  const vals={name,time:String(f.get('time')||''),type:String(f.get('type')||'관광'),status:state,transport:String(f.get('transport')||''),
+  const current=x||{id:uuid(),day:targetDay,done:false,order:0};
+  const previousDay=Number(current.day),moving=!!x&&previousDay!==targetDay;
+  const attached=moving&&!x.candidate?t.stops.filter(v=>v.candidate&&resolvedCandidateParent(t,v.alternativeFor)===x.id&&Number(v.day)===previousDay):[];
+  if(attached.length&&!confirm('이 일정에 연결된 후보 '+attached.length+'개도 새 날짜로 함께 이동할까요?'))return;
+  const beforeStops=JSON.parse(JSON.stringify(t.stops)),expenseBefore=JSON.parse(JSON.stringify(t.expenses)),beforeOrders=JSON.parse(JSON.stringify(t.dayOrders||{}));
+  const before=JSON.parse(JSON.stringify(current));
+  const destinationMax=Math.max(-1,...t.stops.filter(v=>Number(v.day)===targetDay&&!attached.includes(v)&&v.id!==current.id).map(v=>Number.isFinite(Number(v.order))?Number(v.order):-1));
+  const vals={name,day:targetDay,order:moving||!x?destinationMax+1:current.order,time:String(f.get('time')||''),type:String(f.get('type')||'관광'),status:state,transport:String(f.get('transport')||''),
     address:String(f.get('address')||'').trim(),localLanguage:String(f.get('localLanguage')||'').trim().slice(0,40),localName:String(f.get('localName')||'').trim().slice(0,120),localAddress:String(f.get('localAddress')||'').trim().slice(0,240),note:String(f.get('note')||'').trim(),candidate:state==='후보',alternativeFor,
     leg:{...(current.leg||{}),mode:String(f.get('transport')||'미정')||'미정',minutes:legMinutes}};
   if(placeSelected&&vals.address===String(placeSelected.formatted||'').trim()){vals.lat=placeSelected.lat;vals.lon=placeSelected.lon}
   else if(current.address===vals.address&&current.lat!==undefined){vals.lat=current.lat;vals.lon=current.lon}
   else{vals.lat=null;vals.lon=null}
-  Object.assign(current,vals);if(!x){dayStops(t).forEach((v,i)=>v.order=i);t.stops.push(current)}
+  Object.assign(current,vals);if(!x)t.stops.push(current);
+  if(moving){
+   attached.forEach((v,i)=>{v.day=targetDay;v.order=destinationMax+2+i});
+   if(!t.dayOrders||typeof t.dayOrders!=='object'||Array.isArray(t.dayOrders))t.dayOrders={};
+   const movedKeys=new Set([current,...attached].map(v=>'stop:'+v.id));
+   const sourceDate=isoForDay(t,previousDay),targetDate=isoForDay(t,targetDay);
+   if(Array.isArray(t.dayOrders[sourceDate]))t.dayOrders[sourceDate]=t.dayOrders[sourceDate].filter(k=>!movedKeys.has(k));
+   if(Array.isArray(t.dayOrders[targetDate]))t.dayOrders[targetDate]=[...t.dayOrders[targetDate].filter(k=>!movedKeys.has(k)),...movedKeys];
+  }
+  const restore=()=>{t.stops=beforeStops;t.expenses=expenseBefore;t.dayOrders=beforeOrders};
   try{syncStopExpense(t,current,f)}
-  catch(err){if(x){for(const key of Object.keys(x))delete x[key];Object.assign(x,before)}else t.stops=t.stops.filter(v=>v.id!==current.id);t.expenses=expenseBefore;toast(err.message);return}
-  if(!save()){if(x){for(const key of Object.keys(x))delete x[key];Object.assign(x,before)}else t.stops=t.stops.filter(v=>v.id!==current.id);t.expenses=expenseBefore;return}
-  closeModal();detail();toast(x?'장소를 수정했어요.':'새 장소를 추가했어요!');
+  catch(err){restore();toast(err.message);return}
+  const linked=linkedStopExpense(t,current);
+  if(moving&&linked&&linked.expenseDate===isoForDay(t,previousDay))linked.expenseDate=isoForDay(t,targetDay);
+  if(!save()){restore();return}
+  if(moving)detailDay=targetDay;
+  closeModal();detail();toast(moving?'📅 '+dayDateLabel(t,targetDay)+'(으)로 일정을 이동했어요!':x?'장소를 수정했어요.':'새 장소를 추가했어요!');
  };
 }
 function collectionKey(kind){return kind==='expense'?'expenses':kind}
