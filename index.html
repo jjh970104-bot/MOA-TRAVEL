@@ -907,7 +907,7 @@ function moaShanghaiBulkImport(){
  const t=selected(detailId);if(!t||!moaShanghaiLocation(t)){toast('상하이 여행에서만 가져올 수 있어요.');return}
  if(collabId&&!['owner','editor'].includes(collabRole)){toast('보기 전용 여행에서는 추가할 수 없어요.');return}
  ensureTrip(t);
- const norm=v=>String(v||'').replace(/\\s+/g,'').toLowerCase();
+ const norm=v=>String(v||'').replace(/\s+/g,'').toLowerCase();
  const existing=new Set(t.localPlaces.flatMap(p=>[norm(p.localName),norm(p.name)].filter(Boolean)));
  const added=[];
  for(const [category,name,localName] of MOA_SHANGHAI_BULK_PLACES){
