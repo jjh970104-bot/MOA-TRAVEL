@@ -623,7 +623,7 @@
 <body>
 <header class="topbar"><div class="shell toprow"><button class="brand" data-nav="home"><span class="brandmark">✿</span><span class="brandtext">moa<span style="color:#8cb397">.</span></span></button><nav class="topnav"><button class="navlink active" data-nav="home">홈</button><button class="navlink" data-nav="about">모아 알아보기</button><button class="navlink" data-nav="dashboard">내 여행</button><button class="navlink" data-nav="explore">여행 탐색</button><button class="navlink" data-nav="community">커뮤니티</button></nav><div class="topactions"><button class="secondary" id="accountButton" data-account>로그인 / 회원가입</button><button class="primary" id="topCreate">＋ 여행 만들기</button></div></div></header>
 <main id="app" class="shell"></main>
-<footer class="footer"><div class="shell">© 2026 moa. · 여행의 순간을 모으다 <span style="float:right">V2.16 · 장소·회화 통합 검색</span></div></footer>
+<footer class="footer"><div class="shell">© 2026 moa. · 여행의 순간을 모으다 <span style="float:right">V2.16.1 · 후보 일정 수정 오류 해결</span></div></footer>
 <nav class="mobilebar"><button data-nav="home"><span>⌂</span>홈</button><button data-nav="dashboard"><span>▦</span>내 여행</button><button data-nav="explore"><span>⌕</span>탐색</button><button data-nav="community"><span>♡</span>커뮤니티</button></nav>
 <div id="modalRoot"></div><div id="toastRoot"></div>
 <script>
@@ -1827,8 +1827,9 @@ function formStop(editId){
  document.getElementById('geoSettings')?.addEventListener('click',()=>{const val=prompt('Geoapify API Key를 입력해 주세요.',localStorage.getItem(MAP_KEY)||'');if(val!==null){localStorage.setItem(MAP_KEY,val.trim());toast('검색 설정을 저장했어요.')}});
  document.getElementById('stopForm').onsubmit=e=>{
   e.preventDefault();const f=new FormData(e.currentTarget),name=String(f.get('place')||'').trim();if(!name)return;
-  const state=String(f.get('status')||'계획'),alternativeFor=state==='후보'?String(f.get('alternativeFor')||''):'',legMinutes=String(f.get('legMinutes')||'').trim();
-  if(state==='후보'&&t.stops.some(v=>Number(v.day)===detailDay&&v.id!==x?.id&&!v.candidate)&&!alternativeFor){toast('어떤 일정의 대체 후보인지 먼저 선택해 주세요.');return}
+  const state=String(f.get('status')||'계획'),selectedParent=String(f.get('alternativeFor')||''),alternativeFor=state==='후보'?(selectedParent||(x?.candidate&&x?.alternativeFor&&!t.stops.some(v=>v.id===x.alternativeFor)?x.alternativeFor:'')):'',legMinutes=String(f.get('legMinutes')||'').trim();
+  // Independent candidate stops are valid; editing a memo must never require linking a parent.
+  if(state==='후보'&&alternativeFor){const parent=t.stops.find(v=>v.id===alternativeFor);if(parent&&(parent.candidate||parent.id===x?.id||Number(parent.day)!==detailDay)){toast('연결할 원래 일정을 다시 선택해 주세요.');return}}
   if(legMinutes&&(!Number.isInteger(Number(legMinutes))||Number(legMinutes)<0||Number(legMinutes)>1440)){toast('이동 시간을 확인해 주세요.');return}
   const raw=String(f.get('cost')||'').trim(),cur=String(f.get('currency')||'KRW');
   if(raw&&(!Object.hasOwn(MOA_CURRENCIES,cur)||!expenseAmountValid(Number(raw),cur))){toast('비용과 통화를 확인해 주세요.');return}
